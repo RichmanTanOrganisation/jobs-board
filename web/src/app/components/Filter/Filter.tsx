@@ -11,8 +11,8 @@ interface FilterProps {
   setFilterFields: (filterFields: string[]) => void;
   postedByFilter?: 'all' | 'alumni' | 'sponsors';
   setPostedByFilter?: (filter: 'all' | 'alumni' | 'sponsors') => void;
-  range: [number, number];
-  setRange: (range: [number, number]) => void;
+  range?: [number, number];
+  setRange?: (range: [number, number]) => void;
   color?: string;
   useRoles?: boolean;
 }
@@ -63,23 +63,25 @@ const Filter: FC<FilterProps> = ({
           </Title>
           {useRoles ? (
             <Stack>
-              <Stack gap="xs">
-                <Text fw={800} className={styles.filterSubheading}>
-                  Salary Range
-                </Text>
-                <Text fw={500}>
-                  ${range[0].toLocaleString()} - ${range[1].toLocaleString()}
-                </Text>
-                <RangeSlider
-                  min={0}
-                  max={100000}
-                  step={1000}
-                  value={range}
-                  onChange={setRange}
-                  minRange={5000}
-                  label={null}
-                />
-              </Stack>
+              {range && (
+                <Stack gap="xs">
+                  <Text fw={800} className={styles.filterSubheading}>
+                    Salary Range
+                  </Text>
+                  <Text fw={500}>
+                    ${range[0].toLocaleString()} - ${range[1].toLocaleString()}
+                  </Text>
+                  <RangeSlider
+                    min={0}
+                    max={100000}
+                    step={1000}
+                    value={range}
+                    onChange={setRange}
+                    minRange={5000}
+                    label={null}
+                  />
+                </Stack>
+              )}
               <Checkbox.Group
                 value={filterRoles}
                 onChange={handleRolesChange}
@@ -145,7 +147,8 @@ const Filter: FC<FilterProps> = ({
             centered
             classNames={{ content: styles.modal, header: styles.modalHeader }}
           >
-            <Stack gap="xs">
+            {range && (
+              <Stack gap="xs">
                 <Text fw={800} className={styles.filterSubheading}>
                   Salary Range
                 </Text>
@@ -162,6 +165,7 @@ const Filter: FC<FilterProps> = ({
                   label={null}
                 />
               </Stack>
+            )}
             <Stack>
               <Checkbox.Group
                 value={filterRoles}
