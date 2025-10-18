@@ -1,4 +1,4 @@
-import { Checkbox, Title, Button, Stack, Modal, Flex } from '@mantine/core';
+import { Checkbox, Title, Button, Stack, Modal, Flex, Text, RangeSlider } from '@mantine/core';
 import styles from './Filter.module.css';
 import { FC, useState } from 'react';
 import { IconArrowDown } from '@tabler/icons-react';
@@ -11,6 +11,8 @@ interface FilterProps {
   setFilterFields: (filterFields: string[]) => void;
   postedByFilter?: 'all' | 'alumni' | 'sponsors';
   setPostedByFilter?: (filter: 'all' | 'alumni' | 'sponsors') => void;
+  range: [number, number];
+  setRange: (range: [number, number]) => void;
   color?: string;
   useRoles?: boolean;
 }
@@ -22,6 +24,8 @@ const Filter: FC<FilterProps> = ({
   setFilterFields,
   postedByFilter,
   setPostedByFilter,
+  range,
+  setRange,
   color = '#0091ff',
   useRoles = true,
 }) => {
@@ -59,6 +63,23 @@ const Filter: FC<FilterProps> = ({
           </Title>
           {useRoles ? (
             <Stack>
+              <Stack gap="xs">
+                <Text fw={800} className={styles.filterSubheading}>
+                  Salary Range
+                </Text>
+                <Text fw={500}>
+                  ${range[0].toLocaleString()} - ${range[1].toLocaleString()}
+                </Text>
+                <RangeSlider
+                  min={0}
+                  max={100000}
+                  step={1000}
+                  value={range}
+                  onChange={setRange}
+                  minRange={5000}
+                  label={null}
+                />
+              </Stack>
               <Checkbox.Group
                 value={filterRoles}
                 onChange={handleRolesChange}
@@ -99,15 +120,11 @@ const Filter: FC<FilterProps> = ({
               ))}
             </Checkbox.Group>
           </Stack>
-          { useRoles && postedByFilter && setPostedByFilter ? (
+          {useRoles && postedByFilter && setPostedByFilter ? (
             <Stack>
-              <PostedByFilter 
-                value={postedByFilter} 
-                onChange={setPostedByFilter}
-                color={color}
-              />
+              <PostedByFilter value={postedByFilter} onChange={setPostedByFilter} color={color} />
             </Stack>
-          ) : null }
+          ) : null}
         </Stack>
       )}
       {isPortrait && (
@@ -122,20 +139,37 @@ const Filter: FC<FilterProps> = ({
               Filter
             </Button>
           </Flex>
-            <Modal
+          <Modal
             opened={isModalOpen}
             onClose={closeModalWithLog}
             centered
             classNames={{ content: styles.modal, header: styles.modalHeader }}
           >
+            <Stack gap="xs">
+                <Text fw={800} className={styles.filterSubheading}>
+                  Salary Range
+                </Text>
+                <Text fw={500}>
+                  ${range[0].toLocaleString()} - ${range[1].toLocaleString()}
+                </Text>
+                <RangeSlider
+                  min={0}
+                  max={100000}
+                  step={1000}
+                  value={range}
+                  onChange={setRange}
+                  minRange={5000}
+                  label={null}
+                />
+              </Stack>
             <Stack>
               <Checkbox.Group
-                  value={filterRoles}
-                  onChange={handleRolesChange}
-                  label="Role Type"
-                  labelProps={{ style: { color: color } }}
-                  classNames={{ label: styles.filterSubheading }}
-                >
+                value={filterRoles}
+                onChange={handleRolesChange}
+                label="Role Type"
+                labelProps={{ style: { color: color } }}
+                classNames={{ label: styles.filterSubheading }}
+              >
                 {roles.map((role) => (
                   <Checkbox
                     key={role.value}
@@ -168,15 +202,11 @@ const Filter: FC<FilterProps> = ({
                 ))}
               </Checkbox.Group>
             </Stack>
-            { useRoles && postedByFilter && setPostedByFilter ? (
+            {useRoles && postedByFilter && setPostedByFilter ? (
               <Stack>
-                <PostedByFilter 
-                  value={postedByFilter} 
-                  onChange={setPostedByFilter}
-                  color={color}
-                />
+                <PostedByFilter value={postedByFilter} onChange={setPostedByFilter} color={color} />
               </Stack>
-            ) : null }
+            ) : null}
           </Modal>
         </>
       )}
