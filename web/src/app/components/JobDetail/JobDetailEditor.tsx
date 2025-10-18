@@ -27,6 +27,23 @@ interface FormData {
   applicationLink: string;
 }
 
+function normalizeSalary(value: string, type: string): string {
+  const toAnnual = (hourly: number) => hourly * 40 * 52;
+  const roundTo5000 = (num: number) => Math.round(num/1000) * 1000;
+  if (type === 'hourly' && value.includes('-')) {
+    const [min, max] = value.split('-').map(Number);
+
+    return `${roundTo5000(toAnnual(min))}-${roundTo5000(toAnnual(max))}`
+  } else if (type === 'salary') {
+    return value;
+  }
+    else if (value === '') {
+      return 'negotiable';
+    }
+  // if either voluntary or negotiable, return the type
+  return type;
+}
+
 export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEditorModalProps) {
   const [formData, setFormData] = useState<FormData>({
     title: '',
@@ -40,6 +57,8 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [salaryType, setSalaryType] = useState<string>('');
+  const [salaryValue, setSalaryValue] = useState<string>('');
 
   const userRole = useSelector((state: RootState) => state.user.role);
   const userId = useSelector((state: RootState) => state.user.id);
@@ -171,10 +190,7 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
           applicationLink: formData.applicationLink.trim(),
         };
 
-        // Only include salary if it's not empty
-        if (formData.salary && formData.salary.trim()) {
-          updateData.salary = formData.salary.trim();
-        }
+        updateData.salary = normalizeSalary(salaryValue, salaryType);
 
         console.log('Updating job with data:', updateData);
         await updateJob(initialData.id, updateData);
@@ -196,10 +212,7 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
           // Note: publisherID is automatically set by the backend from the current user
         };
 
-        // Only include salary if it's not empty
-        if (formData.salary && formData.salary.trim()) {
-          jobData.salary = formData.salary.trim();
-        }
+        jobData.salary = normalizeSalary(salaryValue, salaryType);
 
         console.log('Creating job with data:', jobData);
         await createJob(jobData);
@@ -266,13 +279,66 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
         <div className={styles.leftColumn}>
           <Avatar src={posterAvatar} alt={'Company Logo'} className={styles.companyLogo} />
           <div className={styles.leftFields}>
-            <TextInput
-              label="Salary"
-              placeholder="Enter salary"
-              className={styles.detailItem}
-              value={formData.salary}
-              onChange={(e) => handleInputChange('salary', e.currentTarget.value)}
+            <Select
+              label="Salary Type"
+              data={[
+                { value: 'hourly', label: 'Hourly' },
+                { value: 'salary', label: 'Salary' },
+                { value: 'negotiable', label: 'Negotiable' },
+                { value: 'voluntary', label: 'Voluntary' },
+              ]}
+              value={salaryType}
+              onChange={(value) => {value &&
+                setSalaryType(value);
+                setSalaryValue('');
+              }}
+              placeholder="Select salary type"
+              required
             />
+
+            {salaryType === 'hourly' && (
+              <Select
+                label="Hourly Wage"
+                data={[
+                  { value: '20-25', label: '$20-$25/hr' },
+                  { value: '25-30', label: '$25-$30/hr' },
+                  { value: '30-35', label: '$30-$35/hr' },
+                  { value: '35-40', label: '$35-$40/hr' },
+                ]}
+                value={salaryValue}
+                onChange={(value) => {value &&
+                  setSalaryValue(value);
+                }}
+                placeholder="Select Hourly Wage"
+                required
+              />
+            )}
+
+            {salaryType === 'salary' && (
+              <Select
+                label="Annual Salary"
+                data={[
+                  { value: '0-45000', label: '$0-$45,000' },
+                  { value: '45000-50000', label: '$45,000-$50,000' },
+                  { value: '55000-60000', label: '$55,000-$60,000' },
+                  { value: '60000-65000', label: '$60,000-$65,000' },
+                  { value: '65000-70000', label: '$65,000-$70,000' },
+                  { value: '70000-75000', label: '$70,000-$75,000' },
+                  { value: '75000-80000', label: '$75,000-$80,000' },
+                  { value: '80000-85000', label: '$80,000-$85,000' },
+                  { value: '85000-90000', label: '$85,000-$90,000' },
+                  { value: '90000-95000', label: '$90,000-$95,000' },
+                  { value: '95000-100000', label: '$95,000-$100,000+' },
+                ]}
+                value={salaryValue}
+                onChange={(value) => {value &&
+                  setSalaryValue(value);
+                }}
+                placeholder="Select Annual Salary"
+                required
+              />
+            )}
+
             <TextInput
               label="Application Deadline"
               type="date"
