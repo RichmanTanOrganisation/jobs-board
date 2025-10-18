@@ -10,11 +10,18 @@ import { usePagination } from '@/hooks/usePagination';
 interface JobListingProps {
   filterRoles: string[];
   filterFields: string[];
+  filterSalary: [number, number];
   search: string;
   postedByFilter: 'all' | 'alumni' | 'sponsors';
 }
 
-const JobListing: FC<JobListingProps> = ({ filterRoles, filterFields, search, postedByFilter }) => {
+const JobListing: FC<JobListingProps> = ({
+  filterRoles,
+  filterFields,
+  filterSalary,
+  search,
+  postedByFilter,
+}) => {
   const [jobListings, setJobListings] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +44,7 @@ const JobListing: FC<JobListingProps> = ({ filterRoles, filterFields, search, po
   }, [search]);
 
   // Step 0: Exlude expired jobs
-  const activeJobs = jobListings.filter(job => {
+  const activeJobs = jobListings.filter((job) => {
     if (!job.applicationDeadline) {
       return true; // Keep if no deadline
     }
@@ -53,22 +60,42 @@ const JobListing: FC<JobListingProps> = ({ filterRoles, filterFields, search, po
   });
 
   // Carl : Filter job listings based on role type
-  // Step 1: apply role/field filters
-  const byFilter = activeJobs.filter(job =>
-    job.roleType &&
-    (filterRoles.length === 0 ||
-      filterRoles.includes(job.roleType.toLowerCase()))
-    || (!job.roleType && filterRoles.length === 0)
-  );
-  
+  // Step 1: apply role/field/salary filters
+  const byFilter = activeJobs.filter((job) => {
+    const roleMatch =
+      (job.roleType &&
+        (filterRoles.length === 0 || filterRoles.includes(job.roleType.toLowerCase()))) ||
+      (!job.roleType && filterRoles.length === 0);
+
+    // salary filter
+    let salaryMatch = true;
+    if (job.salary && filterSalary) {
+      let min: number, max: number;
+      // filter out the normalized salaries and negotiable/voluntary etc
+      if (job.salary.includes('-')) {
+        [min, max] = job.salary.split('-').map(Number);
+      } else {
+        // if negotiable or voluntary, treat as $0
+        min = 0;
+        max = 0;
+      }
+
+      salaryMatch = max >= filterSalary[0] && min <= filterSalary[1];
+    }
+
+    return roleMatch && salaryMatch;
+  });
+
   // Step 2: field filter (not implemented)
 
   // Step 3: apply Posted By filter
   const byPostedByFilter = (() => {
     if (postedByFilter === 'alumni') {
-      return byFilter.filter(job => job.isPostedByAlumni === true);
+      return byFilter.filter((job) => job.isPostedByAlumni === true);
     } else if (postedByFilter === 'sponsors') {
-      return byFilter.filter(job => job.isPostedByAlumni === undefined || job.isPostedByAlumni === false);
+      return byFilter.filter(
+        (job) => job.isPostedByAlumni === undefined || job.isPostedByAlumni === false
+      );
     }
     return byFilter;
   })();
@@ -76,11 +103,12 @@ const JobListing: FC<JobListingProps> = ({ filterRoles, filterFields, search, po
   // Client-side text search across title/description/specialisation
   const searchLower = (search || '').trim().toLowerCase();
   const bySearch = searchLower
-    ? byPostedByFilter.filter(job => {
+    ? byPostedByFilter.filter((job) => {
         const title = (job.title || '').toLowerCase();
         const desc = (job.description || '').toLowerCase();
         const spec = (job.specialisation || '').toLowerCase();
-        const match = title.includes(searchLower) || desc.includes(searchLower) || spec.includes(searchLower);
+        const match =
+          title.includes(searchLower) || desc.includes(searchLower) || spec.includes(searchLower);
         return match;
       })
     : byPostedByFilter;
@@ -88,33 +116,41 @@ const JobListing: FC<JobListingProps> = ({ filterRoles, filterFields, search, po
   const filteredJobListings = bySearch;
 
   // Use the pagination hook
-  const { activePage, setActivePage, paginatedData, totalPages } = usePagination(filteredJobListings, 6);
+  const { activePage, setActivePage, paginatedData, totalPages } = usePagination(
+    filteredJobListings,
+    6
+  );
 
   // Reset page to 1 whenever filters or search changes
-  useEffect(() => setActivePage(1), [search, filterRoles, filterFields, postedByFilter, setActivePage]);
+  useEffect(
+    () => setActivePage(1),
+    [search, filterRoles, filterFields, postedByFilter, setActivePage]
+  );
 
-  useEffect(() => { if (error) console.error('[JobListing] error=', error); }, [error]);
+  useEffect(() => {
+    if (error) console.error('[JobListing] error=', error);
+  }, [error]);
 
   return (
     <Flex justify="flex-start" align="flex-start" direction="column" gap="md">
       <Container className={styles.listingInnerContainer} fluid>
         {loading && <Loader />}
         {error && <Text color="red">{error}</Text>}
-        {!loading && !error && paginatedData.length === 0 && (
-          <Text>No jobs available.</Text>
-        )}
-        {!loading && !error && paginatedData.map((job) => (
-          <JobListingItem
-            key={job.id}
-            id={job.id}
-            title={job.title}
-            description={job.description}
-            location={job.specialisation}
-            company={job.publisherID}
-            logo={""}
-            isPostedByAlumni={job.isPostedByAlumni}
-          />
-        ))}
+        {!loading && !error && paginatedData.length === 0 && <Text>No jobs available.</Text>}
+        {!loading &&
+          !error &&
+          paginatedData.map((job) => (
+            <JobListingItem
+              key={job.id}
+              id={job.id}
+              title={job.title}
+              description={job.description}
+              location={job.specialisation}
+              company={job.publisherID}
+              logo={''}
+              isPostedByAlumni={job.isPostedByAlumni}
+            />
+          ))}
       </Container>
 
       {!loading && filteredJobListings.length > 0 && (
