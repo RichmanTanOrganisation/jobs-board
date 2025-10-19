@@ -1,4 +1,4 @@
-import { ExpressApplication } from '@loopback/rest';
+import {ExpressApplication} from '@loopback/rest';
 
 export * from './admin.repository';
 export * from './alumni.repository';
@@ -12,3 +12,4 @@ export * from './tally-form.repository';
 export * from './tally-submission.repository';
 export * from './tally-webhook.repository';
 export * from './application-nonce.repository';
+export * from './announcements.repository';

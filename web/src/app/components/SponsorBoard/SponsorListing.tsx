@@ -9,9 +9,9 @@ import { fetchSponsors } from '@/api/sponsor';
 
 interface JobListingProps {
   filterRoles: string[];
-  filterFields: string[];
+  filterSpecs: string[];
 }
-const SponsorListing: FC<JobListingProps> = ({ filterRoles, filterFields }) => {
+const SponsorListing: FC<JobListingProps> = ({ filterRoles, filterSpecs }) => {
   const [activePage, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(4);
   const isBase = useMediaQuery('(max-width: 48em)'); // check if screen size is base

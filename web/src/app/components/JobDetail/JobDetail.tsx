@@ -256,7 +256,7 @@ export function JobDetail({ job }: JobDetailProps) {
             </Text>
             <Text size="xl" fw={700} className={styles.detailItem}>
               Application Deadline:{' '}
-              <span style={{ fontWeight: 400 }}>{job.applicationDeadline}</span>
+              <span style={{ fontWeight: 400 }}>{job.applicationDeadline.split("T")[0]}</span>
             </Text>
           </div>
         </div>
@@ -324,7 +324,7 @@ export function JobDetail({ job }: JobDetailProps) {
           <Text size="2rem" fw={700}>
             About
           </Text>
-          <Text>{job.description}</Text>
+          <Text className={styles.descriptionText}>{job.description}</Text>
 
           {/* Submissions Section for Job Owners */}
           {isOwner && job.tallyFormId && (

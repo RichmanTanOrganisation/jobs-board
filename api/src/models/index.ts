@@ -1,4 +1,3 @@
-
 export * from './fsae-user.model';
 export * from './roles';
 export * from './member.model';
@@ -18,3 +17,5 @@ export * from './tally-form.model';
 export * from './tally-submission.model';
 export * from './tally-webhook.model';
 export * from './application-nonce.model';
+export * from './notification.model';
+export * from './notification.type';
