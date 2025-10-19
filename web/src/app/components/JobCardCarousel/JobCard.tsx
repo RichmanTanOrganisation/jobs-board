@@ -20,20 +20,26 @@ export interface JobCardProps {
   publisherID: string;
 }
 
-export function JobCard({ data, onJobDeleted, onEditJob }: { 
-  data: JobCardProps; 
+const truncate = (s: string, max = 120) => {
+  const t = (s ?? '').trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max);
+  const i = cut.lastIndexOf(' ');
+  return ((i > 0 ? cut.slice(0, i) : cut).trimEnd()) + '…';
+};
+
+export function JobCard({
+  data,
+  onJobDeleted,
+  onEditJob,
+}: {
+  data: JobCardProps;
   onJobDeleted?: () => void;
   onEditJob?: (jobData: JobCardProps) => void;
 }) {
   const navigate = useNavigate();
   const role = useSelector((state: RootState) => state.user.role);
   const userId = useSelector((state: RootState) => state.user.id);
-  
-  // Truncate long descriptions to keep card heights consistent
-  const truncateText = (text: string, max = 150) => {
-    if (!text) return '';
-    return text.length > max ? text.slice(0, max - 1).trimEnd() + '…' : text;
-  };
 
   const handleDeleteJob = async () => {
     if (window.confirm(`Are you sure you want to delete the job "${data.title}"?`)) {
@@ -49,20 +55,16 @@ export function JobCard({ data, onJobDeleted, onEditJob }: {
   };
 
   const handleEditJob = () => {
-    // Check if user can edit this job
     const canEdit = role === 'sponsor' || role === 'alumni';
     const isOwner = userId && data.publisherID === userId;
-    
     if (!canEdit) {
       toast.error('You do not have permission to edit jobs');
       return;
     }
-    
     if (!isOwner) {
       toast.error('You can only edit your own job posts');
       return;
     }
-
     navigate(`/job-editor/${data.id}`);
   };
 
@@ -71,7 +73,7 @@ export function JobCard({ data, onJobDeleted, onEditJob }: {
   };
 
   const getElementBasedOnRole = (element: string) => {
-    switch (role) { 
+    switch (role) {
       case 'member':
         return getStudentElements(element);
       case 'sponsor':
@@ -85,16 +87,11 @@ export function JobCard({ data, onJobDeleted, onEditJob }: {
 
   const getSponsorElements = (element: string) => {
     const isOwner = userId && data.publisherID === userId;
-    
     switch (element) {
       case 'deleteBtn':
         return isOwner ? (
-          <ActionIcon
-            variant="transparent"
-            color="white"
-            onClick={handleDeleteJob}>
-            <IconTrash 
-            aria-label = "Delete Job"/>
+          <ActionIcon variant="transparent" color="white" onClick={handleDeleteJob}>
+            <IconTrash aria-label="Delete Job" />
           </ActionIcon>
         ) : null;
       case 'jobBtn':
@@ -111,14 +108,7 @@ export function JobCard({ data, onJobDeleted, onEditJob }: {
             Edit Job
           </Button>
         ) : (
-          <Button
-            color="blue"
-            mt="xs"
-            mr="md"
-            radius="lg"
-            size="compact-md"
-            onClick={handleViewJob}
-          >
+          <Button color="blue" mt="xs" mr="md" radius="lg" size="compact-md" onClick={handleViewJob}>
             View Job
           </Button>
         );
@@ -131,14 +121,7 @@ export function JobCard({ data, onJobDeleted, onEditJob }: {
         return null;
       case 'jobBtn':
         return (
-          <Button
-            color="blue"
-            mt="xs"
-            mr="md"
-            radius="lg"
-            size="compact-md"
-            onClick={handleViewJob}
-          >
+          <Button color="blue" mt="xs" mr="md" radius="lg" size="compact-md" onClick={handleViewJob}>
             View Job
           </Button>
         );
@@ -147,16 +130,11 @@ export function JobCard({ data, onJobDeleted, onEditJob }: {
 
   const getAlumniElements = (element: string) => {
     const isOwner = userId && data.publisherID === userId;
-    
     switch (element) {
       case 'deleteBtn':
         return isOwner ? (
-          <ActionIcon
-            variant="transparent"
-            color="white"
-            onClick={handleDeleteJob}>
-            <IconTrash 
-            aria-label = "Delete Job"/>
+          <ActionIcon variant="transparent" color="white" onClick={handleDeleteJob}>
+            <IconTrash aria-label="Delete Job" />
           </ActionIcon>
         ) : null;
       case 'jobBtn':
@@ -173,14 +151,7 @@ export function JobCard({ data, onJobDeleted, onEditJob }: {
             Edit Job
           </Button>
         ) : (
-          <Button
-            color="blue"
-            mt="xs"
-            mr="md"
-            radius="lg"
-            size="compact-md"
-            onClick={handleViewJob}
-          >
+          <Button color="blue" mt="xs" mr="md" radius="lg" size="compact-md" onClick={handleViewJob}>
             View Job
           </Button>
         );
@@ -218,8 +189,13 @@ export function JobCard({ data, onJobDeleted, onEditJob }: {
           </Flex>
 
           {/* Truncated description to keep consistent card height */}
-          <Text fw={700} size="sm" className={`${styles.text} ${styles.description}`}>
-            {truncateText(data.description, 150)}
+          <Text
+            fw={700}
+            size="sm"
+            className={`${styles.text} ${styles.description}`}
+            lineClamp={3}
+          >
+            {truncate(data.description, 120)}
           </Text>
 
           <Flex justify="space-between" align="center">
