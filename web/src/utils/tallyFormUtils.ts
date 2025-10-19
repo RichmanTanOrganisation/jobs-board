@@ -1,6 +1,71 @@
 import { FormField } from '@/app/components/TallyFormBuilder/TallyFormBuilder';
 
 /**
+ * MIME type mapping for FILE_UPLOAD allowedFiles conversion
+ * Maps file extensions to their MIME type categories used by Tally API
+ */
+const MIME_TYPE_MAPPING: Record<string, string> = {
+  // Documents & Archives (application/*)
+  '.pdf': 'application/*',
+  '.doc': 'application/*',
+  '.docx': 'application/*',
+  '.xlsx': 'application/*',
+  '.zip': 'application/*',
+
+  // Images (image/*)
+  '.jpg': 'image/*',
+  '.jpeg': 'image/*',
+  '.png': 'image/*',
+
+  // Text (text/*)
+  '.txt': 'text/*',
+  '.csv': 'text/*',  // Primary category
+};
+
+/**
+ * Convert flat array of file extensions to Tally's allowedFiles object format.
+ * Groups extensions by MIME type category.
+ *
+ * Special case: CSV appears in BOTH text/* and application/* (Tally convention from API testing).
+ *
+ * @param extensions - Array of file extensions (e.g., ['.pdf', '.jpg', '.csv'])
+ * @returns Object grouped by MIME type (e.g., { "application/*": [".pdf"], "image/*": [".jpg"] })
+ *
+ * @example
+ * convertFileTypesToAllowedFiles(['.pdf', '.jpg', '.csv'])
+ * // Returns: {
+ * //   "application/*": [".pdf", ".csv"],
+ * //   "image/*": [".jpg"],
+ * //   "text/*": [".csv"]
+ * // }
+ */
+function convertFileTypesToAllowedFiles(extensions: string[]): Record<string, string[]> {
+  const allowedFiles: Record<string, string[]> = {};
+
+  extensions.forEach(ext => {
+    const mimeType = MIME_TYPE_MAPPING[ext];
+    if (!mimeType) return;
+
+    if (!allowedFiles[mimeType]) {
+      allowedFiles[mimeType] = [];
+    }
+    allowedFiles[mimeType].push(ext);
+  });
+
+  // Special: Add CSV to application/* if selected (matches Tally API pattern from test form)
+  if (extensions.includes('.csv')) {
+    if (!allowedFiles['application/*']) {
+      allowedFiles['application/*'] = [];
+    }
+    if (!allowedFiles['application/*'].includes('.csv')) {
+      allowedFiles['application/*'].push('.csv');
+    }
+  }
+
+  return allowedFiles;
+}
+
+/**
  * Convert FormFields to Tally blocks format
  *
  * This utility function transforms user-configured form fields into the
@@ -141,6 +206,52 @@ export function convertToTallyBlocks(formTitle: string, fields: FormField[]) {
           defaultCountryCode: "NZ",         // HARDCODED: Pre-select New Zealand for UoA
           placeholder: field.placeholder || ''
         }
+      });
+    }
+
+    // FILE_UPLOAD: Same pattern as INPUT_EMAIL/INPUT_PHONE_NUMBER (TITLE + FILE_UPLOAD pair)
+    else if (field.type === 'FILE_UPLOAD') {
+      const titleGroupUuid = crypto.randomUUID();
+      const fileUploadGroupUuid = crypto.randomUUID();
+
+      // TITLE block with question text
+      blocks.push({
+        uuid: crypto.randomUUID(),
+        type: 'TITLE',
+        groupUuid: titleGroupUuid,
+        groupType: 'QUESTION',
+        payload: { html: field.label }
+      });
+
+      // FILE_UPLOAD block with configuration
+      const payload: any = {
+        isRequired: field.required
+      };
+
+      // Multiple files support
+      if (field.allowMultipleFiles) {
+        payload.hasMultipleFiles = true;
+
+        // Max files (only when multiple = true)
+        if (field.maxFiles) {
+          payload.hasMaxFiles = true;
+          payload.maxFiles = field.maxFiles;
+        } else {
+          payload.hasMaxFiles = false;
+        }
+      }
+
+      // Convert file types array to allowedFiles object (grouped by MIME type)
+      if (field.allowedFileTypes && field.allowedFileTypes.length > 0) {
+        payload.allowedFiles = convertFileTypesToAllowedFiles(field.allowedFileTypes);
+      }
+
+      blocks.push({
+        uuid: crypto.randomUUID(),
+        type: 'FILE_UPLOAD',
+        groupUuid: fileUploadGroupUuid,
+        groupType: 'FILE_UPLOAD',  // CRITICAL: Must be 'FILE_UPLOAD', not 'QUESTION'
+        payload
       });
     }
 

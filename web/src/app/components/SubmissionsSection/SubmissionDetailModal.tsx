@@ -1,5 +1,5 @@
-import { Modal, Stack, Text, Group, Badge, Select, Paper, Divider, Box } from '@mantine/core';
-import { IconSquareCheck, IconSquare, IconCircleFilled, IconCircle } from '@tabler/icons-react';
+import { Modal, Stack, Text, Group, Badge, Select, Paper, Divider, Box, Anchor, List } from '@mantine/core';
+import { IconSquareCheck, IconSquare, IconCircleFilled, IconCircle, IconFile, IconFileTypePdf, IconPhoto } from '@tabler/icons-react';
 import { useState } from 'react';
 
 interface SubmissionDetailModalProps {
@@ -157,6 +157,22 @@ function isIndividualCheckboxField(key: string): boolean {
   return uuidPattern.test(key);
 }
 
+// Helper function to format file size from bytes to human-readable format
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+}
+
+// Helper function to get file icon based on MIME type
+function getFileIcon(mimeType: string) {
+  if (mimeType.startsWith('image/')) return IconPhoto;
+  if (mimeType === 'application/pdf') return IconFileTypePdf;
+  return IconFile;
+}
+
 // Helper function to format field values based on type
 function formatFieldValue(field: any): React.ReactNode {
   if (!field.value && field.type !== 'CHECKBOXES' && field.type !== 'MULTIPLE_CHOICE') {
@@ -238,10 +254,46 @@ function formatFieldValue(field: any): React.ReactNode {
       return field.value?.toString() || 'No answer provided';
 
     case 'FILE_UPLOAD':
-      if (typeof field.value === 'object' && field.value.url) {
-        return `File uploaded: ${field.value.name || 'View file'}`;
+      // Handle file uploads - value is always an array of file objects
+      if (!Array.isArray(field.value) || field.value.length === 0) {
+        return <Text c="dimmed" size="sm">No files uploaded</Text>;
       }
-      return 'File uploaded';
+
+      return (
+        <List spacing="sm" size="sm">
+          {field.value.map((file: any, idx: number) => {
+            const FileIcon = getFileIcon(file.mimeType || '');
+            const fileExtension = file.name?.split('.').pop()?.toUpperCase() || 'FILE';
+
+            return (
+              <List.Item
+                key={file.id || idx}
+                icon={<FileIcon size={18} color="var(--mantine-color-blue-6)" />}
+              >
+                <Group gap="xs" wrap="nowrap">
+                  <Anchor
+                    href={file.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    size="sm"
+                    fw={500}
+                  >
+                    {file.name || 'Unnamed file'}
+                  </Anchor>
+                  <Group gap={4}>
+                    <Badge size="xs" variant="light" color="gray">
+                      {fileExtension}
+                    </Badge>
+                    <Text size="xs" c="dimmed">
+                      ({formatFileSize(file.size || 0)})
+                    </Text>
+                  </Group>
+                </Group>
+              </List.Item>
+            );
+          })}
+        </List>
+      );
 
     default:
       if (Array.isArray(field.value)) {

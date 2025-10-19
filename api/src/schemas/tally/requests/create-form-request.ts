@@ -9,6 +9,7 @@ import { InputTextPayload } from "../payloads/input-text-payload/v2";  // Using 
 import { TextareaPayload } from "../payloads/textarea-payload/v1";
 import { InputEmailPayload } from "../payloads/input-email-payload/v1";
 import { InputPhoneNumberPayload } from "../payloads/input-phone-number-payload/v1";
+import { FileUploadPayload } from "../payloads/file-upload-payload/v1";
 import { MultipleChoiceOptionPayload } from "../payloads/multiple-choice-option-payload/v2";  // Using v2 (empirically validated)
 import { CheckboxPayload } from "../payloads/checkbox-payload/v2";  // Using v2 (empirically validated)
 
@@ -85,6 +86,13 @@ const Block = z.discriminatedUnion("type", [
     groupUuid: Uuid,
     groupType: GroupType,
     payload: InputPhoneNumberPayload,
+  }).passthrough(),
+  z.object({
+    uuid: Uuid,
+    type: z.literal("FILE_UPLOAD"),
+    groupUuid: Uuid,
+    groupType: GroupType,
+    payload: FileUploadPayload,
   }).passthrough(),
   z.object({
     uuid: Uuid,

@@ -1,4 +1,4 @@
-import { Paper, Select, TextInput, Checkbox, Group, ActionIcon, Stack, Button, Text, RangeSlider } from '@mantine/core';
+import { Paper, Select, TextInput, Checkbox, Group, ActionIcon, Stack, Button, Text, RangeSlider, MultiSelect } from '@mantine/core';
 import { IconArrowUp, IconArrowDown, IconTrash, IconPlus } from '@tabler/icons-react';
 import { toast } from 'react-toastify';
 import { FormField } from './TallyFormBuilder';
@@ -10,8 +10,23 @@ const FIELD_TYPES_PHASE_1A = [
   { value: 'TEXTAREA', label: 'Long Answer (paragraph text)', groupType: 'QUESTION' },
   { value: 'INPUT_EMAIL', label: 'Email Address', groupType: 'QUESTION' },
   { value: 'INPUT_PHONE_NUMBER', label: 'Phone Number', groupType: 'QUESTION' },
+  { value: 'FILE_UPLOAD', label: 'File Upload', groupType: 'QUESTION' },
   { value: 'CHECKBOX', label: 'Checkbox (single or list)', groupType: 'QUESTION' },
   { value: 'MULTIPLE_CHOICE_OPTION', label: 'Multiple Choice (radio buttons)', groupType: 'QUESTION' },
+];
+
+// File type options for FILE_UPLOAD field (10 essential types for FSAE job applications)
+const FILE_TYPE_OPTIONS = [
+  { value: '.pdf', label: 'PDF' },
+  { value: '.doc', label: 'Word 97-2003' },
+  { value: '.docx', label: 'Word' },
+  { value: '.xlsx', label: 'Excel' },
+  { value: '.jpg', label: 'JPEG Image' },
+  { value: '.jpeg', label: 'JPEG Image (alt)' },
+  { value: '.png', label: 'PNG Image' },
+  { value: '.zip', label: 'ZIP Archive' },
+  { value: '.txt', label: 'Text File' },
+  { value: '.csv', label: 'CSV' },
 ];
 
 interface FieldEditorProps {
@@ -34,7 +49,7 @@ export function FieldEditor({
   onMoveDown
 }: FieldEditorProps) {
   const needsOptions = field.type === 'MULTIPLE_CHOICE_OPTION' || field.type === 'CHECKBOX';
-  const needsRequired = ['INPUT_TEXT', 'TEXTAREA', 'INPUT_EMAIL', 'INPUT_PHONE_NUMBER', 'CHECKBOX', 'MULTIPLE_CHOICE_OPTION'].includes(field.type);
+  const needsRequired = ['INPUT_TEXT', 'TEXTAREA', 'INPUT_EMAIL', 'INPUT_PHONE_NUMBER', 'FILE_UPLOAD', 'CHECKBOX', 'MULTIPLE_CHOICE_OPTION'].includes(field.type);
   const isStaticField = field.type === 'TEXT';
 
   // Static marks for fixed 1-10 RangeSlider
@@ -380,6 +395,37 @@ export function FieldEditor({
           <Text size="xs" c="dimmed" mt="xs">
             {(field.options || []).length}/10 options
           </Text>
+        </Stack>
+      )}
+
+      {field.type === 'FILE_UPLOAD' && (
+        <Stack gap="md" mt="sm">
+          <Checkbox
+            label="Allow multiple files"
+            description="Let applicants upload more than one file"
+            checked={field.allowMultipleFiles || false}
+            onChange={(e) => onUpdate({ allowMultipleFiles: e.target.checked })}
+          />
+
+          {field.allowMultipleFiles && (
+            <Select
+              label="Maximum files allowed"
+              data={['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']}
+              value={String(field.maxFiles || 10)}
+              onChange={(value) => onUpdate({ maxFiles: Number(value) })}
+            />
+          )}
+
+          <MultiSelect
+            label="Allowed file types"
+            description="Select which file types applicants can upload"
+            data={FILE_TYPE_OPTIONS}
+            value={field.allowedFileTypes || ['.pdf', '.docx']}
+            onChange={(value) => onUpdate({ allowedFileTypes: value })}
+            searchable
+            clearable
+            required
+          />
         </Stack>
       )}
     </Paper>

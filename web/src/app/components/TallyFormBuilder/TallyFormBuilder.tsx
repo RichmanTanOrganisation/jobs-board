@@ -19,6 +19,11 @@ export interface FormField {
   maxChoices?: number;  // Maximum selections (CHECKBOX or MULTIPLE_CHOICE with allowMultiple)
   allowMultiple?: boolean;  // Allow multiple selections for MULTIPLE_CHOICE_OPTION
   groupType: string;  // GROUP_TYPE for Tally blocks
+
+  // FILE_UPLOAD specific fields
+  allowMultipleFiles?: boolean;  // Allow multiple file uploads
+  maxFiles?: number;  // Maximum number of files (only when allowMultipleFiles = true)
+  allowedFileTypes?: string[];  // Array of allowed file extensions: ['.pdf', '.docx', ...]
 }
 
 interface TallyFormBuilderProps {
