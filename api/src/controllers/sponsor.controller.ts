@@ -123,19 +123,19 @@ export class SponsorController {
     await this.sponsorRepository.deleteById(id);
   }
 
-  @authorize({
-    allowedRoles: [FsaeRole.SPONSOR],
-  })
-  @ownerOnly({
-    ownerField: 'id',
-  })
+  @authorize({allowedRoles: [FsaeRole.SPONSOR]})
+  @ownerOnly({ownerField: 'id'})
   @patch('/user/sponsor/notifications/{id}/read-all')
-  @response(204, {
-    description: 'Notifications marked as read',
-  })
+  @response(204, {description: 'Notifications marked as read'})
   async markAllNotificationsAsRead(
     @param.path.string('id') id: string,
   ): Promise<void> {
+    const {count} = await this.sponsorRepository.count({
+      and: [{id}, {'notifications.0': {exists: true}} as AnyObject],
+    });
+
+    if (count === 0) return;
+
     await this.sponsorRepository.updateById(id, {
       $set: {
         'notifications.$[].read': true,
@@ -183,26 +183,34 @@ export class SponsorController {
   }> {
     const sponsorId = this.currentUserProfile.id as string;
     const sponsor = await this.sponsorRepository.findById(sponsorId, {
-      fields: {lastSeenAnnouncementsAt: true},
-    });
-    const lastSeen = sponsor.lastSeenAnnouncementsAt ?? new Date(0);
+      fields: {lastSeenAnnouncementsAt: true, createdAt: true},
+    } as AnyObject);
+
+    const lastSeen: Date = sponsor.lastSeenAnnouncementsAt ?? new Date(0);
+    const joinedAt: Date = (sponsor as AnyObject).createdAt ?? new Date();
 
     const audienceWhere: AnyObject = {
-      or: [{userRole: 'member'}, {userRole: {exists: false}}, {userRole: []}],
+      or: [{userRole: 'sponsor'}, {userRole: {exists: false}}, {userRole: []}],
     };
 
+    // Newest first, cap 10, never show items before the account was created
     const items = await this.announcementRepository.find({
-      where: audienceWhere as AnyObject,
+      where: {and: [audienceWhere, {createdAt: {gte: joinedAt}}]} as AnyObject,
       order: ['createdAt DESC'],
+      limit: 10,
     });
 
     const announcements = items.map(a => ({
       ...a,
-      read: !(new Date(a.createdAt).getTime() > new Date(lastSeen).getTime()),
+      read: new Date(a.createdAt).getTime() <= lastSeen.getTime(),
     })) as unknown as Notification[];
 
     const {count} = await this.announcementRepository.count({
-      and: [audienceWhere as AnyObject, {createdAt: {gt: lastSeen}}],
+      and: [
+        audienceWhere,
+        {createdAt: {gt: lastSeen}},
+        {createdAt: {gte: joinedAt}},
+      ],
     } as AnyObject);
 
     return {announcements, hasUnread: count > 0, unreadCount: count};
