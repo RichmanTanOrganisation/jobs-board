@@ -1,16 +1,23 @@
 import { apiInstance } from '@/api/ApiInstance';
 
+export enum AdminStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
 export async function login(email: string, password: string) {
   let role;
   try {
     const res = await apiInstance.get(`user/${email}/role`);
     role = res.data;
+    console.log(role);
 
     if (!role) {
       throw Error('Invalid credentials');
     }
   } catch (e) {
-    throw Error('Invalid credentials');
+    throw e;
   }
 
   let loginUrl;
@@ -31,17 +38,26 @@ export async function login(email: string, password: string) {
       email,
       password,
     });
-    const { userId, token, verified, hasMissingInfo } = res.data;
+    const { userId, token, verified, activated, adminStatus } = res.data;
+    console.log('Activated', activated);
+    console.log('Admin Status', adminStatus);
 
-    if (!verified) {
-      return { role: 'unverified', id: userId};
+    if (!activated) {
+      return { role: 'deactivated', id: userId };
+    } else if (adminStatus === AdminStatus.PENDING) {
+      localStorage.setItem('accessToken', token);
+      return { role: 'pending', id: userId };
+    } else if (adminStatus === AdminStatus.REJECTED) {
+      return { role: 'rejected', id: userId };
+    } else if (!verified) {
+      return { role: 'unverified', id: userId };
     } else {
       localStorage.setItem('accessToken', token);
       console.log(`Successfully logged in as UserID ${userId}`);
       // console.log(role);
-      return { role: role, id: userId}; // Return role and missing info flag
+      return { role: role, id: userId }; // Return role and missing info flag
     }
   } catch (e) {
-    throw Error('Invalid credentials');
+    throw e;
   }
 }
