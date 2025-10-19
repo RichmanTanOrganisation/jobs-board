@@ -1,4 +1,4 @@
-import { ActionIcon, Text, Button, Paper, Flex, Stack, Badge, useMantineTheme } from '@mantine/core';
+import { ActionIcon, Text, Button, Paper, Flex, Stack, Badge, useMantineTheme, Group } from '@mantine/core';
 import styles from './UniversalJobCard.module.css';
 import { IconTrash, IconEdit } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
@@ -132,7 +132,7 @@ export const UniversalJobCard: FC<UniversalJobCardComponentProps> = ({
 
   const getSponsorElements = (element: string) => {
     const isOwner = userId && data.publisherID === userId;
-    
+
     switch (element) {
       case 'deleteBtn':
         return (showDeleteButton && isOwner) ? (
@@ -140,23 +140,34 @@ export const UniversalJobCard: FC<UniversalJobCardComponentProps> = ({
             variant="transparent"
             color="white"
             onClick={handleDeleteJob}>
-            <IconTrash 
+            <IconTrash
             aria-label = "Delete Job"/>
           </ActionIcon>
         ) : null;
       case 'jobBtn':
-        return (showEditButton && isOwner) ? (
-          <Button
-            color="blue"
-            mt="xs"
-            mr="md"
-            radius="lg"
-            size="compact-md"
-            onClick={handleEditJob}
-            leftSection={<IconEdit size={14} />}
-          >
-            Edit Job
-          </Button>
+        return isOwner ? (
+          <Group gap="xs">
+            <Button
+              color="blue"
+              mt="xs"
+              radius="lg"
+              size="compact-md"
+              onClick={handleViewJob}
+            >
+              View Job
+            </Button>
+            <Button
+              color="blue"
+              mt="xs"
+              radius="lg"
+              size="compact-md"
+              variant="light"
+              onClick={handleEditJob}
+              leftSection={<IconEdit size={14} />}
+            >
+              Edit
+            </Button>
+          </Group>
         ) : (
           <Button
             color="blue"
@@ -194,7 +205,7 @@ export const UniversalJobCard: FC<UniversalJobCardComponentProps> = ({
 
   const getAlumniElements = (element: string) => {
     const isOwner = userId && data.publisherID === userId;
-    
+
     switch (element) {
       case 'deleteBtn':
         return (showDeleteButton && isOwner) ? (
@@ -202,23 +213,34 @@ export const UniversalJobCard: FC<UniversalJobCardComponentProps> = ({
             variant="transparent"
             color="white"
             onClick={handleDeleteJob}>
-            <IconTrash 
+            <IconTrash
             aria-label = "Delete Job"/>
           </ActionIcon>
         ) : null;
       case 'jobBtn':
-        return (showEditButton && isOwner) ? (
-          <Button
-            color="blue"
-            mt="xs"
-            mr="md"
-            radius="lg"
-            size="compact-md"
-            onClick={handleEditJob}
-            leftSection={<IconEdit size={14} />}
-          >
-            Edit Job
-          </Button>
+        return isOwner ? (
+          <Group gap="xs">
+            <Button
+              color="blue"
+              mt="xs"
+              radius="lg"
+              size="compact-md"
+              onClick={handleViewJob}
+            >
+              View Job
+            </Button>
+            <Button
+              color="blue"
+              mt="xs"
+              radius="lg"
+              size="compact-md"
+              variant="light"
+              onClick={handleEditJob}
+              leftSection={<IconEdit size={14} />}
+            >
+              Edit
+            </Button>
+          </Group>
         ) : (
           <Button
             color="blue"
