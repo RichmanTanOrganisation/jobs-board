@@ -238,7 +238,7 @@ function Navbar() {
         padding="md"
         hidden={!isMobile}
       >
-        <AppShell.Navbar p="md" style={{ backgroundColor: 'rgba(0, 0, 0, 0.9)' }}>
+        <AppShell.Navbar p="md" className={styles.mobileNavbar}>
           <Group justify="flex-end">
             <Burger
               opened={opened}
@@ -252,85 +252,165 @@ function Navbar() {
 
           {role && isRole(role) ? (
             <>
-              {/* Mobile Actions for Logged-in Users */}
-              <Flex justify="center" align="center" gap="sm" direction="column">
-                <Divider my="sm" />
-                <Button
-                  size="xl"
-                  radius="md"
-                  variant="light"
-                  color="customPapayaOrange"
-                  fullWidth
-                  onClick={() => { handleProfileClick(); close(); }}
-                  leftSection={<IconUserCircle size={36} />}
-                  style={{ border: '1px solid white' }}
-                >
-                  <Text size="xl">Profile</Text>
-                </Button>
-                <Button
-                  size="xl"
-                  radius="md"
-                  variant="light"
-                  color="customPapayaOrange"
-                  fullWidth
-                  onClick={() => { handleSetting(); close(); }}
-                  leftSection={<IconSettings size={36} />}
-                  style={{ border: '1px solid white' }}
-                >
-                  <Text size="xl">Settings</Text>
-                </Button>
-                {role !== Role.Member && (
+              <Flex className={styles.mobileButtonsContainer}>
+                <div className={styles.mobileTopGroup}>
+                  <Divider my="sm" />
+                  {/* Primary role-specific links first (exclude Jobs/Dashboard) */}
+                  {navLinks[role]
+                    .filter(
+                      (link) =>
+                        link.label !== 'Jobs' &&
+                        link.label !== 'Job Board' &&
+                        link.label !== 'Dashboard'
+                    )
+                    .map((link) => (
+                      <Button
+                        key={link.path}
+                        size="xl"
+                        radius="md"
+                        variant="light"
+                        color="customPapayaOrange"
+                        fullWidth
+                        className={styles.mobileButton}
+                        onClick={() => {
+                          navigate(link.path);
+                          close();
+                        }}
+                      >
+                        <Text size="xl">{link.label}</Text>
+                      </Button>
+                    ))}
+                </div>
+
+                <div className={styles.mobileBottomGroup}>
+                  {/* Profile */}
                   <Button
                     size="xl"
                     radius="md"
                     variant="light"
                     color="customPapayaOrange"
                     fullWidth
-                    onClick={close}
-                    leftSection={<IconBell size={36} />}
-                    style={{ border: '1px solid white' }}
+                    className={styles.mobileButton}
+                    onClick={() => {
+                      handleProfileClick();
+                      close();
+                    }}
+                    leftSection={<IconUserCircle size={36} />}
                   >
-                    <Text size="xl">Notifications</Text>
+                    <Text size="xl">Profile</Text>
                   </Button>
-                )}
-                <Button
-                  size="xl"
-                  radius="md"
-                  variant="light"
-                  color="customPapayaOrange"
-                  fullWidth
-                  onClick={() => { handleLogout(); close(); }}
-                  leftSection={<IconLogout size={36} />}
-                  style={{ border: '1px solid white' }}
-                >
-                  <Text size="xl">Logout</Text>
-                </Button>
+
+                  {/* Job Board under Profile */}
+                  <Button
+                    size="xl"
+                    radius="md"
+                    variant="light"
+                    color="customPapayaOrange"
+                    fullWidth
+                    className={styles.mobileButton}
+                    onClick={() => {
+                      handleJobClick();
+                      close();
+                    }}
+                    leftSection={<IconBriefcase2 size={36} />}
+                  >
+                    <Text size="xl">Job Board</Text>
+                  </Button>
+
+                  {/* Settings */}
+                  <Button
+                    size="xl"
+                    radius="md"
+                    variant="light"
+                    color="customPapayaOrange"
+                    fullWidth
+                    className={styles.mobileButton}
+                    onClick={() => {
+                      handleSetting();
+                      close();
+                    }}
+                    leftSection={<IconSettings size={36} />}
+                  >
+                    <Text size="xl">Settings</Text>
+                  </Button>
+
+                  {/* Notifications (only for non-members) */}
+                  {role !== Role.Member && (
+                    <Button
+                      size="xl"
+                      radius="md"
+                      variant="light"
+                      color="customPapayaOrange"
+                      fullWidth
+                      className={styles.mobileButton}
+                      onClick={() => {
+                        close();
+                      }}
+                      leftSection={<IconBell size={36} />}
+                    >
+                      <Text size="xl">Notifications</Text>
+                    </Button>
+                  )}
+
+                  {/* Logout (red) */}
+                  <Button
+                    size="xl"
+                    radius="md"
+                    variant="light"
+                    color="red"
+                    fullWidth
+                    className={`${styles.mobileButton} ${styles.logoutButton}`}
+                    onClick={() => {
+                      handleLogout();
+                      close();
+                    }}
+                    leftSection={<IconLogout size={36} />}
+                  >
+                    <Text size="xl">Logout</Text>
+                  </Button>
+                </div>
               </Flex>
             </>
           ) : (
             <>
               <Flex justify="center" align="center" gap="sm" direction="column">
                 <Divider my="sm" />
+
                 <Menu width={200}>
                   <Menu.Target>
-                    <Button variant="subtle" color="white" fullWidth>
+                    <Button
+                      size="xl"
+                      radius="md"
+                      variant="light"
+                      color="customPapayaOrange"
+                      fullWidth
+                      className={styles.mobileButton}
+                    >
                       Sign Up
                     </Button>
                   </Menu.Target>
                   <Menu.Dropdown>
-                    <NavLink to="/signup/member" onClick={close} style={{ textDecoration: 'none' }}>
+                    <NavLink to="/signup/member" onClick={close} className={styles.navLinkReset}>
                       <Menu.Item>Student</Menu.Item>
                     </NavLink>
-                    <NavLink to="/signup/sponsor" onClick={close} style={{ textDecoration: 'none' }}>
+                    <NavLink to="/signup/sponsor" onClick={close} className={styles.navLinkReset}>
                       <Menu.Item>Sponsor</Menu.Item>
                     </NavLink>
-                    <NavLink to="/signup/alumni" onClick={close} style={{ textDecoration: 'none' }}>
+                    <NavLink to="/signup/alumni" onClick={close} className={styles.navLinkReset}>
                       <Menu.Item>Alumni</Menu.Item>
                     </NavLink>
                   </Menu.Dropdown>
                 </Menu>
-                <NavLink to="/login" onClick={close} style={{ textDecoration: 'none', width: '100%' }}>
-                  <Button variant="subtle" color="white" fullWidth>
+
+                <NavLink to="/login" onClick={close} className={styles.navLinkReset}>
+                  <Button
+                    size="xl"
+                    radius="md"
+                    variant="light"
+                    color="customPapayaOrange"
+                    fullWidth
+                    className={styles.mobileButton}
+                  >
                     Log In
                   </Button>
                 </NavLink>
