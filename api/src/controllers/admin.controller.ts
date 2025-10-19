@@ -319,6 +319,12 @@ export class AdminController {
     const {title, msgBody, userTypes} = body;
     const CAP = 50;
 
+    if (!Array.isArray(userTypes) || userTypes.length === 0) {
+      throw new HttpErrors.BadRequest(
+        'userTypes must be a non-empty array of roles',
+      );
+    }
+
     const roleToRepo: Record<FsaeRole, any> = {
       [FsaeRole.ALUMNI]: this.alumniRepository,
       [FsaeRole.MEMBER]: this.memberRepository,
