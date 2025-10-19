@@ -9,7 +9,7 @@ import { usePagination } from '@/hooks/usePagination';
 
 interface JobListingProps {
   filterRoles: string[];
-  filterFields: string[];
+  filterSpecs: string[];
   filterSalary: [number, number];
   search: string;
   postedByFilter: 'all' | 'alumni' | 'sponsors';
@@ -17,7 +17,7 @@ interface JobListingProps {
 
 const JobListing: FC<JobListingProps> = ({
   filterRoles,
-  filterFields,
+  filterSpecs,
   filterSalary,
   search,
   postedByFilter,
@@ -124,7 +124,7 @@ const JobListing: FC<JobListingProps> = ({
   // Reset page to 1 whenever filters or search changes
   useEffect(
     () => setActivePage(1),
-    [search, filterRoles, filterFields, postedByFilter, setActivePage]
+    [search, filterRoles, filterSpecs, postedByFilter, setActivePage]
   );
 
   useEffect(() => {
@@ -142,13 +142,7 @@ const JobListing: FC<JobListingProps> = ({
           paginatedData.map((job) => (
             <JobListingItem
               key={job.id}
-              id={job.id}
-              title={job.title}
-              description={job.description}
-              location={job.specialisation}
-              company={job.publisherID}
-              logo={''}
-              isPostedByAlumni={job.isPostedByAlumni}
+              job={job}
             />
           ))}
       </Container>

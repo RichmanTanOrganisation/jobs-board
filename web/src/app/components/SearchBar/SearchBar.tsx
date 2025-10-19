@@ -29,7 +29,7 @@ const SearchBar: FC<SearchBarProps> = ({ search, setSearch, title, placeholder, 
   };
 
   return (
-    <Grid mt={90} mb="xs">
+    <Grid mb="xs">
       <Grid.Col span={12}>
         <Title order={4}>{title}</Title>
         <TextInput

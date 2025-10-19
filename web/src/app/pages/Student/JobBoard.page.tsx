@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import SearchBar from '../../components/SearchBar/SearchBar';
 export function JobBoard() {
   const [filterRoles, setFilterRoles] = useState<string[]>([]);
-  const [filterFields, setFilterFields] = useState<string[]>([]);
+  const [filterSpecs, setFilterSpecs] = useState<string[]>([]);
   const [isPortrait, setIsPortrait] = useState(window.innerHeight > window.innerWidth);
   const [searchInput, setSearchInput] = useState('');
   const [range, setRange] = useState<[number, number]>([0, 100000]);
@@ -39,8 +39,8 @@ export function JobBoard() {
             <Filter
               filterRoles={filterRoles}
               setFilterRoles={setFilterRoles}
-              filterFields={filterFields}
-              setFilterFields={setFilterFields}
+              filterSpecs={filterSpecs}
+              setFilterSpecs={setFilterSpecs}
               postedByFilter={postedByFilter}
               setPostedByFilter={setPostedByFilter}
               range={range}
@@ -66,7 +66,7 @@ export function JobBoard() {
             />
             <JobListing
               filterRoles={filterRoles}
-              filterFields={filterFields}
+              filterSpecs={filterSpecs}
               filterSalary={range}
               search={search}
               postedByFilter={postedByFilter}
@@ -74,19 +74,19 @@ export function JobBoard() {
           </Grid.Col>
         </>
       ) : (
-        <Grid.Col span={12}>
+        <Grid.Col span={12} mt={90}>
           <SearchBar
             search={searchInput}
             setSearch={setSearchInput}
-            title=""
-            placeholder=""
+            title="Job Board"
+            placeholder="Search jobs"
             onSearch={handleSearch}
           />
           <Filter
             filterRoles={filterRoles}
             setFilterRoles={setFilterRoles}
-            filterFields={filterFields}
-            setFilterFields={setFilterFields}
+            filterSpecs={filterSpecs}
+            setFilterSpecs={setFilterSpecs}
             postedByFilter={postedByFilter}
             setPostedByFilter={setPostedByFilter}
             range={range}
@@ -94,7 +94,7 @@ export function JobBoard() {
           />
           <JobListing
             filterRoles={filterRoles}
-            filterFields={filterFields}
+            filterSpecs={filterSpecs}
             filterSalary={range}
             search={search}
             postedByFilter={postedByFilter}

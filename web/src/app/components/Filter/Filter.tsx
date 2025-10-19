@@ -7,8 +7,8 @@ import PostedByFilter from './PostedByFilter';
 interface FilterProps {
   filterRoles: string[];
   setFilterRoles: (filterRoles: string[]) => void;
-  filterFields: string[];
-  setFilterFields: (filterFields: string[]) => void;
+  filterSpecs: string[];
+  setFilterSpecs: (filterSpecs: string[]) => void;
   postedByFilter?: 'all' | 'alumni' | 'sponsors';
   setPostedByFilter?: (filter: 'all' | 'alumni' | 'sponsors') => void;
   range?: [number, number];
@@ -20,8 +20,8 @@ interface FilterProps {
 const Filter: FC<FilterProps> = ({
   filterRoles,
   setFilterRoles,
-  filterFields,
-  setFilterFields,
+  filterSpecs,
+  setFilterSpecs,
   postedByFilter,
   setPostedByFilter,
   range,
@@ -36,7 +36,7 @@ const Filter: FC<FilterProps> = ({
     { value: 'GRAD_ROLE', label: 'Graduate Roles' },
   ];
 
-  const fields = [
+  const specialisations = [
     { value: 'BUSINESS', label: 'Business' },
     { value: 'COMPOSITES', label: 'Composites' },
     { value: 'MECHANICAL', label: 'Mechanical' },
@@ -52,7 +52,7 @@ const Filter: FC<FilterProps> = ({
   const openModalWithLog = () => openModal();
   const closeModalWithLog = () => closeModal();
   const handleRolesChange = (values: string[]) => setFilterRoles(values);
-  const handleFieldsChange = (values: string[]) => setFilterFields(values);
+  const handleSpecsChange = (values: string[]) => setFilterSpecs(values);
 
   return (
     <>
@@ -104,13 +104,13 @@ const Filter: FC<FilterProps> = ({
           ) : null}
           <Stack>
             <Checkbox.Group
-              value={filterFields}
-              onChange={handleFieldsChange}
-              label={useRoles ? 'Fields' : 'Industry'}
+              value={filterSpecs}
+              onChange={handleSpecsChange}
+              label={useRoles ? 'Specs' : 'Industry'}
               labelProps={{ style: { color: color } }}
               classNames={{ label: styles.filterSubheading }}
             >
-              {fields.map((role) => (
+              {specialisations.map((role) => (
                 <Checkbox
                   key={role.value}
                   value={role.value}
@@ -188,13 +188,13 @@ const Filter: FC<FilterProps> = ({
             </Stack>
             <Stack>
               <Checkbox.Group
-                value={filterFields}
-                onChange={handleFieldsChange}
-                label="Fields"
+                value={filterSpecs}
+                onChange={handleSpecsChange}
+                label="Specs"
                 labelProps={{ style: { color: color } }}
                 classNames={{ label: styles.filterSubheading }}
               >
-                {fields.map((role) => (
+                {specialisations.map((role) => (
                   <Checkbox
                     key={role.value}
                     value={role.value}
