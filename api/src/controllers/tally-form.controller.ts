@@ -404,8 +404,16 @@ export class TallyFormController {
         };
       }
 
-      // Generate JWT token with nonce for secure applicant linking
-      const nonce = crypto.randomBytes(16).toString('hex');
+      // Check for existing pending nonce (prevents duplicates during polling)
+      const existingNonce = await this.applicationNonceRepository.findOne({
+        where: {
+          applicantId: applicantId,
+          jobId: jobId,
+          status: 'pending',
+          expiresAt: {gt: new Date()}, // Not expired
+        },
+      });
+
       const tokenSecret = process.env.APPLICATION_TOKEN_SECRET;
 
       if (!tokenSecret) {
@@ -414,6 +422,35 @@ export class TallyFormController {
         );
       }
 
+      if (existingNonce) {
+        // Reuse existing nonce - reconstruct JWT token
+        const token = jwt.sign(
+          {
+            applicantId,
+            applicantRole: userRole,
+            jobId,
+            formId: form.id,
+            nonce: existingNonce.nonce,
+            exp: Math.floor(existingNonce.expiresAt.getTime() / 1000), // Use stored expiration
+          },
+          tokenSecret,
+        );
+
+        const embedUrl = `https://tally.so/embed/${form.tallyFormId}?platform-applicant-auth-token=${token}`;
+
+        return {
+          form_title: form.formTitle,
+          embed_url: embedUrl,
+          preview_url: form.previewUrl || '',
+          has_form: true,
+          already_applied: false,
+        };
+      }
+
+      // Generate new nonce (first time only)
+      const nonce = crypto.randomBytes(16).toString('hex');
+      const expiresAt = new Date(Date.now() + 86400000); // 24 hours in ms
+
       const token = jwt.sign(
         {
           applicantId,
@@ -421,7 +458,7 @@ export class TallyFormController {
           jobId,
           formId: form.id,
           nonce,
-          exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, // 24 hours
+          exp: Math.floor(expiresAt.getTime() / 1000), // Use same expiration as nonce record
         },
         tokenSecret,
       );
@@ -432,7 +469,7 @@ export class TallyFormController {
         status: 'pending',
         applicantId: applicantId,
         jobId,
-        expiresAt: new Date(Date.now() + 86400000), // 24 hours in ms
+        expiresAt: expiresAt,
       });
 
       // Return embed URL with token parameter (hidden field auto-population)
