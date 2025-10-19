@@ -8,6 +8,7 @@ interface InviteCode {
   code: string;
   isActive: boolean;
   useCount: number;
+  maxUses: number;
   createdAt: Date;
 }
 
@@ -21,7 +22,8 @@ export function InviteCodeModal({ opened, onClose }: InviteCodeModalProps) {
     id: '',
     code: '',
     isActive: false,
-    useCount: 1,
+    useCount: 0,
+    maxUses: 1,
     createdAt: new Date(),
   });
 
@@ -70,9 +72,9 @@ export function InviteCodeModal({ opened, onClose }: InviteCodeModalProps) {
           onChange={(e) => handleChange('isActive', e.currentTarget.checked)}
         />
         <NumberInput
-          label="Use Count"
-          value={formData.useCount}
-          onChange={(value) => handleChange('useCount', value || 1)}
+          label="Max Uses"
+          value={formData.maxUses}
+          onChange={(value) => handleChange('maxUses', value || 1)}
           min={1}
           step={1}
           hideControls={false}
@@ -80,7 +82,7 @@ export function InviteCodeModal({ opened, onClose }: InviteCodeModalProps) {
         <TextInput
           label="Created At"
           value={formData.createdAt.toISOString().slice(0, 10)}
-          readOnly
+          disabled
         />
         <Group justify="flex-end">
           <Button onClick={handleSave}>Save</Button>
