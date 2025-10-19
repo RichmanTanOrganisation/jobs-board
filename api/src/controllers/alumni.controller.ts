@@ -117,8 +117,6 @@ export class AlumniController {
     await this.alumniRepository.deleteById(id);
   }
 
-  // ---- Notifications (from your branch) ----
-
   @authorize({allowedRoles: [FsaeRole.ALUMNI]})
   @ownerOnly({ownerField: 'id'})
   @patch('/user/alumni/notifications/{id}/read-all')
@@ -212,8 +210,6 @@ export class AlumniController {
       lastSeenAnnouncementsAt: new Date(),
     });
   }
-
-  // ---- File upload/view/delete (from main) ----
 
   @post('/user/alumni/{id}/upload-avatar')
   @authenticate('fsae-jwt')
