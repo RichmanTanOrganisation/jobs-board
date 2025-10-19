@@ -80,9 +80,17 @@ const JobListing: FC<JobListingProps> = ({ filterRoles, filterFields, search }) 
             id={job.id}
             title={job.title}
             description={job.description}
+            // pass publisherID as company (or change to publisher name if you have it)
+            company={job.publisherID}
+            // existing mapping used specialisation for location; keep that if desired
             location={job.specialisation}
-            company={""}
-            logo={""} 
+            // extra fields forwarded so badges and dates render
+            roleType={job.roleType}
+            specialisation={job.specialisation}
+            salary={job.salary}
+            applicationDeadline={job.applicationDeadline}
+            datePosted={job.datePosted}
+
           />
         ))}
       </Container>
