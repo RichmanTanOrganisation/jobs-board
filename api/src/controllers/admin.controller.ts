@@ -202,7 +202,7 @@ export class AdminController {
         'application/json': {
           schema: {
             type: 'object',
-            required: ['title', 'msgBody', 'userType', 'type'],
+            required: ['title', 'userType', 'type'],
             properties: {
               title: {type: 'string', minLength: 1},
               msgBody: {type: 'string', minLength: 1},
@@ -229,7 +229,7 @@ export class AdminController {
     })
     body: {
       title: string;
-      msgBody: string;
+      msgBody?: string;
       userType: FsaeRole;
       type: NotificationType;
     },
@@ -249,15 +249,20 @@ export class AdminController {
     const user = await userRepository.findById(id);
     user.notifications = user.notifications ?? [];
 
-    const notification: Notification = new Notification({
+    const notificationData: Partial<Notification> = {
       id: randomUUID(),
       issuer: this.currentUser[securityId] as string,
       title,
-      msgBody,
       type,
       read: false,
       createdAt: new Date(),
-    });
+    };
+
+    if (msgBody && msgBody.toString().trim().length > 0) {
+      notificationData.msgBody = msgBody;
+    }
+
+    const notification: Notification = new Notification(notificationData);
 
     //use slice so that we auto maintain the embeds to a max cap of CAP items. older notifs get dropped
     await userRepository.updateById(id, {
@@ -282,7 +287,7 @@ export class AdminController {
         'application/json': {
           schema: {
             type: 'object',
-            required: ['title', 'msgBody', 'userTypes'],
+            required: ['title', 'userTypes'],
             properties: {
               title: {type: 'string', minLength: 1},
               msgBody: {type: 'string', minLength: 1},
@@ -307,7 +312,7 @@ export class AdminController {
     })
     body: {
       title: string;
-      msgBody: string;
+      msgBody?: string;
       userTypes: FsaeRole[];
     },
   ): Promise<{sent: number}> {
@@ -322,15 +327,21 @@ export class AdminController {
       [FsaeRole.UNKNOWN]: undefined,
     };
 
-    const announcement: Notification = new Notification({
+    const announcementData: Partial<Notification> = {
       id: randomUUID(),
       issuer: this.currentUser[securityId] as string,
       title,
-      msgBody,
-      type: NotificationType.ANNOUNCEMENT, // ← always announcement
+      type: NotificationType.ANNOUNCEMENT, // always announcement
       read: false,
       createdAt: new Date(),
-    });
+    };
+
+    // only include msgBody when it's provided and not just whitespace
+    if (msgBody && msgBody.toString().trim().length > 0) {
+      announcementData.msgBody = msgBody;
+    }
+
+    const announcement: Notification = new Notification(announcementData);
 
     let totalSent = 0;
 

@@ -292,16 +292,27 @@ function Navbar() {
                       ) : (
                         <ul className={styles.list} role="listbox" aria-label="Notifications">
                           {notifs.map((n) => {
-                            const isExpanded = !!expanded[n.id];
+                            // only allow expansion when there's a non-empty message body
+                            const hasMsg = Boolean(
+                              n.msgBody && n.msgBody.toString().trim().length > 0
+                            );
+                            const isExpanded = hasMsg && !!expanded[n.id];
+
                             return (
                               <li key={n.id}>
                                 <UnstyledButton
                                   className={`${styles.item} ${!n.read ? styles.unread : ''} ${
                                     isExpanded ? styles.expanded : ''
                                   }`}
-                                  onClick={() => setExpanded((e) => ({ ...e, [n.id]: !e[n.id] }))}
+                                  onClick={
+                                    hasMsg
+                                      ? () => setExpanded((e) => ({ ...e, [n.id]: !e[n.id] }))
+                                      : undefined
+                                  }
                                   title={new Date(n.createdAt).toLocaleString()}
                                   aria-expanded={isExpanded}
+                                  disabled={!hasMsg}
+                                  style={{ cursor: hasMsg ? 'pointer' : 'default' }}
                                 >
                                   {!n.read && <span className={styles.dot} aria-hidden />}
                                   <div className={styles.row}>

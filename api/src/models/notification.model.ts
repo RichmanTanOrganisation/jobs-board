@@ -7,7 +7,7 @@ export class Notification extends Model {
   id?: string;
   @property({type: 'string', required: true}) issuer: string;
   @property({type: 'string', required: true}) title: string;
-  @property({type: 'string', required: true}) msgBody: string;
+  @property({type: 'string'}) msgBody?: string;
   @property({type: 'string', required: true}) type: NotificationType;
   @property({type: 'boolean', required: true}) read: boolean;
   @property({
