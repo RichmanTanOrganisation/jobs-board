@@ -12,9 +12,15 @@ import { FormEvent } from 'react';
 import styles from './authform.module.css';
 import { NavLink } from 'react-router-dom';
 import { Role } from '../../type/role';
-import { toast } from "react-toastify";
-import { createFSAEUserDto, register_alumni, register_member, register_sponsor } from "@/api/register";
+import { toast } from 'react-toastify';
+import {
+  createFSAEUserDto,
+  register_alumni,
+  register_member,
+  register_sponsor,
+} from '@/api/register';
 import { useNavigate } from 'react-router-dom';
+import { login, validateInviteCode } from '@/api/login';
 
 interface Field {
   label: string;
@@ -32,16 +38,14 @@ const fieldsByRole: { [key in Role]: Field[] } = {
     { label: 'First Name', name: 'firstName' },
     { label: 'Last Name', name: 'lastName' },
   ],
-  [Role.Sponsor]: [
-    { label: 'Company', name: 'companyName' },
-  ],
+  [Role.Sponsor]: [{ label: 'Company', name: 'companyName' }],
   [Role.Alumni]: [
     { label: 'First Name', name: 'firstName' },
     { label: 'Last Name', name: 'lastName' },
     { label: 'Company', name: 'companyName' },
   ],
   [Role.Admin]: [],
-  [Role.Unknown]: []
+  [Role.Unknown]: [],
 };
 
 const FormComponent: React.FC<FormComponentProps> = ({ fields, onSubmit }) => (
@@ -94,7 +98,7 @@ const FormComponent: React.FC<FormComponentProps> = ({ fields, onSubmit }) => (
         name="inviteCode"
         size="md"
         classNames={{ label: styles.formLabel }}
-        placeholder='Optional'
+        placeholder="Optional"
       />
       <Checkbox
         size="md"
@@ -118,66 +122,80 @@ const FormComponent: React.FC<FormComponentProps> = ({ fields, onSubmit }) => (
 
 const SignupForm = ({ role }: { role: Role }) => {
   const navigate = useNavigate();
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.target as HTMLFormElement);
     const data = Object.fromEntries(formData.entries());
 
-    const {terms, confirmPassword, ...sanitisedData} = data
+    const { terms, confirmPassword, ...sanitisedData } = data;
 
     if (!terms) {
-      toast.error("You must accept the terms and conditions");
+      toast.error('You must accept the terms and conditions');
       return;
     }
     if (sanitisedData.password != confirmPassword) {
-      toast.error("You password and confirmed password do not match");
+      toast.error('You password and confirmed password do not match');
       return;
     }
 
     // Note: the type createFSAEUserDto is not correct... whoever originally wrote this
     // sort of gave up on type safety :/ (good opportunity for refactor in the future!)
+    // second note: this chunk of code getting very long but im too lazy to refactor
     if (role === Role.Member) {
-      register_member(sanitisedData as unknown as createFSAEUserDto).then((response) => {
+      try {
+        await register_member(sanitisedData as unknown as createFSAEUserDto);
+        await login(data.email.toString(), data.password.toString());
+        const token = localStorage.getItem('accessToken');
+
+        if (data.inviteCode && token) {
+          await validateInviteCode(data.inviteCode.toString(), token);
+        }
+
         toast.success('Student Registration Successful');
-        navigate('/verify', { 
-          state: {
-            email: formData.get('email'),
-            password: formData.get('password'),
-          },
-          replace: true
+        navigate('/verify', {
+          state: { email: data.email, password: data.password },
+          replace: true,
         });
-      }).catch((error) => {
-        toast.error(error.toString());
-      })
+      } catch (error: any) {
+        toast.error(error.message || 'An error occurred');
+      }
     } else if (role === Role.Sponsor) {
-      register_sponsor(sanitisedData as unknown as createFSAEUserDto).then((response) => {
+      try {
+        await register_sponsor(sanitisedData as unknown as createFSAEUserDto);
+        await login(data.email.toString(), data.password.toString());
+        const token = localStorage.getItem('accessToken');
+
+        if (data.inviteCode && token) {
+          await validateInviteCode(data.inviteCode.toString(), token);
+        }
+
         toast.success('Sponsor Registration Successful');
         navigate('/verify', {
-          state: {
-            email: formData.get('email'),
-            password: formData.get('password'),
-          },
-          replace: true
+          state: { email: data.email, password: data.password },
+          replace: true,
         });
-      }).catch((error) => {
-        toast.error(error.toString());
-      })
+      } catch (error: any) {
+        toast.error(error.message || 'An error occurred');
+      }
     } else if (role === Role.Alumni) {
-      register_alumni(sanitisedData as unknown as createFSAEUserDto).then((response) => {
-        toast.success('Alumni Registration Successful');
+      try {
+        await register_alumni(sanitisedData as unknown as createFSAEUserDto);
+        await login(data.email.toString(), data.password.toString());
+        const token = localStorage.getItem('accessToken');
+
+        if (data.inviteCode && token) {
+          await validateInviteCode(data.inviteCode.toString(), token);
+        }
+
+        toast.success(' Registration Successful');
         navigate('/verify', {
-          state: {
-            email: formData.get('email'),
-            password: formData.get('password'),
-          },
-          replace: true
+          state: { email: data.email, password: data.password },
+          replace: true,
         });
-      }).catch((error) => {
-        toast.error(error.toString());
-      })
-    } else {
-      toast.error('Registering Unknown Role');
-    }
+      } catch (error: any) {
+        toast.error(error.message || 'An error occurred');
+      }
+    } 
   };
 
   return (
