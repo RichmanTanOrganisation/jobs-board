@@ -296,9 +296,6 @@ export function JobDetail({ job }: JobDetailProps) {
                         ✓ Already Applied
                       </Button>
                     )}
-
-                    {/* Save button */}
-                    <Button variant="outline">Save</Button>
                   </>
                 )}
                 {canEdit && isOwner && (
