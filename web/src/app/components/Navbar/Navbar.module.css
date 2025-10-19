@@ -12,11 +12,11 @@
   background-color: rgba(0, 0, 0, 0.9);
 }
 
-/* Container for mobile buttons */
+/* Container for mobile buttons - a bit more space between top and bottom groups */
 .mobileButtonsContainer {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 18px; /* increased gap between groups */
   align-items: stretch;
   justify-content: flex-start;
 }
@@ -38,14 +38,15 @@
   margin-bottom: 6px;
 }
 
-/* Shared button styling for mobile buttons */
+/* Shared button styling for mobile buttons - blue outline matching app Azure blue */
 .mobileButton {
-  border: 1px solid white !important;
+  border: 1px solid var(--mantine-color-customAzureBlue-1) !important;
 }
 
-/* Logout button override to make it red */
+/* Logout button override to make it red*/
 .logoutButton {
   border-color: #ff4d4f !important;
+  margin-top: 18px;
 }
 
 /* NavLink reset for full-width links */
