@@ -89,6 +89,13 @@ const FormComponent: React.FC<FormComponentProps> = ({ fields, onSubmit }) => (
           classNames={{ label: styles.formLabel, root: styles.horizontalInput }}
         />
       </Flex>
+      <TextInput
+        label="Invite Code"
+        name="inviteCode"
+        size="md"
+        classNames={{ label: styles.formLabel }}
+        placeholder='Optional'
+      />
       <Checkbox
         size="md"
         label={
