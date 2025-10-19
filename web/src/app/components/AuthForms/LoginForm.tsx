@@ -39,6 +39,7 @@ export function LoginForm() {
       dispatch(setRole(roleEnum));
       dispatch(setId(id));
 
+      //fetch notifs and display the number of unread notifs as a badge on the notifications icon in the navbar
       // Only show success toast if profile is complete
       toast.success('Login Successful');
 
@@ -108,7 +109,7 @@ export function LoginForm() {
         </Button>
         <Text ta="center" mt="xl">
           Don&apos;t have an account?{' '}
-          <NavLink to="/" className={styles.link}>
+          <NavLink to="/signup/member" className={styles.link}>
             Sign up
           </NavLink>
         </Text>

@@ -1,4 +1,4 @@
-import { Checkbox, Title, Button, Stack, Modal, Flex } from '@mantine/core';
+import { Checkbox, Title, Button, Stack, Modal, Flex, Text, RangeSlider } from '@mantine/core';
 import styles from './Filter.module.css';
 import { FC, useState } from 'react';
 import { IconArrowDown } from '@tabler/icons-react';
@@ -7,10 +7,12 @@ import PostedByFilter from './PostedByFilter';
 interface FilterProps {
   filterRoles: string[];
   setFilterRoles: (filterRoles: string[]) => void;
-  filterFields: string[];
-  setFilterFields: (filterFields: string[]) => void;
+  filterSpecs: string[];
+  setFilterSpecs: (filterSpecs: string[]) => void;
   postedByFilter?: 'all' | 'alumni' | 'sponsors';
   setPostedByFilter?: (filter: 'all' | 'alumni' | 'sponsors') => void;
+  range?: [number, number];
+  setRange?: (range: [number, number]) => void;
   color?: string;
   useRoles?: boolean;
 }
@@ -18,26 +20,29 @@ interface FilterProps {
 const Filter: FC<FilterProps> = ({
   filterRoles,
   setFilterRoles,
-  filterFields,
-  setFilterFields,
+  filterSpecs,
+  setFilterSpecs,
   postedByFilter,
   setPostedByFilter,
+  range,
+  setRange,
   color = '#0091ff',
   useRoles = true,
 }) => {
   const roles = [
-    { value: 'internship', label: 'Internship' },
-    { value: 'graduate', label: 'Graduate Roles' },
-    { value: 'junior', label: 'Junior Roles' },
+    { value: 'NOT_FOR_HIRE', label: 'None' },
+    { value: 'INTERNSHIP', label: 'Internship' },
+    { value: 'PART_TIME', label: 'Part Time' },
+    { value: 'GRAD_ROLE', label: 'Graduate Roles' },
   ];
 
-  const fields = [
-    { value: 'auto', label: 'Automation' },
-    { value: 'electrical', label: 'Electrical' },
-    { value: 'mechanical', label: 'Mechanical' },
-    { value: 'mechatronics', label: 'Mechatronics' },
-    { value: 'software', label: 'Software' },
-    { value: 'other', label: 'Other' },
+  const specialisations = [
+    { value: 'BUSINESS', label: 'Business' },
+    { value: 'COMPOSITES', label: 'Composites' },
+    { value: 'MECHANICAL', label: 'Mechanical' },
+    { value: 'ELECTRICAL', label: 'Electrical' },
+    { value: 'AUTONOMOUS', label: 'Autonomous' },
+    { value: 'RACE_TEAM', label: 'Race Team' },
   ];
   const [isModalOpen, setIsModalOpen] = useState(false);
   const openModal = () => setIsModalOpen(true);
@@ -47,7 +52,7 @@ const Filter: FC<FilterProps> = ({
   const openModalWithLog = () => openModal();
   const closeModalWithLog = () => closeModal();
   const handleRolesChange = (values: string[]) => setFilterRoles(values);
-  const handleFieldsChange = (values: string[]) => setFilterFields(values);
+  const handleSpecsChange = (values: string[]) => setFilterSpecs(values);
 
   return (
     <>
@@ -58,6 +63,25 @@ const Filter: FC<FilterProps> = ({
           </Title>
           {useRoles ? (
             <Stack>
+              {range && (
+                <Stack gap="xs">
+                  <Text fw={800} className={styles.filterSubheading}>
+                    Salary Range
+                  </Text>
+                  <Text fw={500}>
+                    ${range[0].toLocaleString()} - ${range[1].toLocaleString()}
+                  </Text>
+                  <RangeSlider
+                    min={0}
+                    max={100000}
+                    step={1000}
+                    value={range}
+                    onChange={setRange}
+                    minRange={5000}
+                    label={null}
+                  />
+                </Stack>
+              )}
               <Checkbox.Group
                 value={filterRoles}
                 onChange={handleRolesChange}
@@ -80,13 +104,13 @@ const Filter: FC<FilterProps> = ({
           ) : null}
           <Stack>
             <Checkbox.Group
-              value={filterFields}
-              onChange={handleFieldsChange}
-              label={useRoles ? 'Fields' : 'Industry'}
+              value={filterSpecs}
+              onChange={handleSpecsChange}
+              label={useRoles ? 'Specs' : 'Industry'}
               labelProps={{ style: { color: color } }}
               classNames={{ label: styles.filterSubheading }}
             >
-              {fields.map((role) => (
+              {specialisations.map((role) => (
                 <Checkbox
                   key={role.value}
                   value={role.value}
@@ -98,15 +122,11 @@ const Filter: FC<FilterProps> = ({
               ))}
             </Checkbox.Group>
           </Stack>
-          { useRoles && postedByFilter && setPostedByFilter ? (
+          {useRoles && postedByFilter && setPostedByFilter ? (
             <Stack>
-              <PostedByFilter 
-                value={postedByFilter} 
-                onChange={setPostedByFilter}
-                color={color}
-              />
+              <PostedByFilter value={postedByFilter} onChange={setPostedByFilter} color={color} />
             </Stack>
-          ) : null }
+          ) : null}
         </Stack>
       )}
       {isPortrait && (
@@ -121,20 +141,39 @@ const Filter: FC<FilterProps> = ({
               Filter
             </Button>
           </Flex>
-            <Modal
+          <Modal
             opened={isModalOpen}
             onClose={closeModalWithLog}
             centered
             classNames={{ content: styles.modal, header: styles.modalHeader }}
           >
+            {range && (
+              <Stack gap="xs">
+                <Text fw={800} className={styles.filterSubheading}>
+                  Salary Range
+                </Text>
+                <Text fw={500}>
+                  ${range[0].toLocaleString()} - ${range[1].toLocaleString()}
+                </Text>
+                <RangeSlider
+                  min={0}
+                  max={100000}
+                  step={1000}
+                  value={range}
+                  onChange={setRange}
+                  minRange={5000}
+                  label={null}
+                />
+              </Stack>
+            )}
             <Stack>
               <Checkbox.Group
-                  value={filterRoles}
-                  onChange={handleRolesChange}
-                  label="Role Type"
-                  labelProps={{ style: { color: color } }}
-                  classNames={{ label: styles.filterSubheading }}
-                >
+                value={filterRoles}
+                onChange={handleRolesChange}
+                label="Role Type"
+                labelProps={{ style: { color: color } }}
+                classNames={{ label: styles.filterSubheading }}
+              >
                 {roles.map((role) => (
                   <Checkbox
                     key={role.value}
@@ -149,13 +188,13 @@ const Filter: FC<FilterProps> = ({
             </Stack>
             <Stack>
               <Checkbox.Group
-                value={filterFields}
-                onChange={handleFieldsChange}
-                label="Fields"
+                value={filterSpecs}
+                onChange={handleSpecsChange}
+                label="Specs"
                 labelProps={{ style: { color: color } }}
                 classNames={{ label: styles.filterSubheading }}
               >
-                {fields.map((role) => (
+                {specialisations.map((role) => (
                   <Checkbox
                     key={role.value}
                     value={role.value}
@@ -167,15 +206,11 @@ const Filter: FC<FilterProps> = ({
                 ))}
               </Checkbox.Group>
             </Stack>
-            { useRoles && postedByFilter && setPostedByFilter ? (
+            {useRoles && postedByFilter && setPostedByFilter ? (
               <Stack>
-                <PostedByFilter 
-                  value={postedByFilter} 
-                  onChange={setPostedByFilter}
-                  color={color}
-                />
+                <PostedByFilter value={postedByFilter} onChange={setPostedByFilter} color={color} />
               </Stack>
-            ) : null }
+            ) : null}
           </Modal>
         </>
       )}

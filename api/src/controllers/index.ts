@@ -10,3 +10,5 @@ export * from './verification.controller';
 export * from './application.controller';
 export * from './invite-code.controller';
 export * from './validate-code.controller';
+export * from './tally-form.controller';
+export * from './application-webhook.controller';

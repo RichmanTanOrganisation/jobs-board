@@ -1,70 +1,47 @@
 // JobListingItem.ts
-import { Card, Text, Button, Flex, Avatar, Badge, useMantineTheme } from '@mantine/core';
 import { FC } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Job } from '@/models/job.model';
-import { useUserAvatar } from '@/hooks/useUserAvatar';
+import { UniversalJobCard, UniversalJobCardProps } from '../UniversalJobCard/UniversalJobCard';
 
 interface JobListingItemProps {
-  id: Job['id'];
-  title: Job['title'];
-  description: Job['description'];
-  company: Job['publisherID'];
-  location?: Job['location'];
-  logo?: string;
-  isPostedByAlumni?: boolean;
+  job: Job;
 }
 
-const JobListingItem: FC<JobListingItemProps> = ({ id, title, description, company, location, logo, isPostedByAlumni }) => {
-  const navigate = useNavigate();
-  const theme = useMantineTheme();
-  const { avatarUrl: posterAvatar } = useUserAvatar(company);
-
-  const handleViewDetails = () => {
-    navigate(`/jobs/${id}`);
+const JobListingItem: FC<JobListingItemProps> = ({ job }) => {
+  const jobData: UniversalJobCardProps = {
+    id: job.id,
+    title: job.title,
+    description: job.description,
+    specialisation: job.specialisation,
+    roleType: job.roleType,
+    salary: job.salary,
+    applicationDeadline: job.applicationDeadline,
+    datePosted: job.datePosted,
+    publisherID: job.publisherID,
+    company: job.publisherID,
+    location: job.location,
+    isPostedByAlumni: job.isPostedByAlumni
   };
 
-  const handleBadgeClick = () => {
-    navigate(`/profile/alumni/${company}`);
-  }
+  const truncateText = (text: string | undefined, max = 200) => {
+    if (!text) return '';
+    return text.length > max ? text.slice(0, max - 1).trimEnd() + '…' : text;
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    if (Number.isNaN(d.getTime())) return dateString;
+    return d.toLocaleDateString();
+  };
 
   return (
-    <Card
-      shadow="sm"
-      padding="lg"
-      radius="md"
-      withBorder
-      style={{
-        borderColor: isPostedByAlumni ? theme.colors.customPapayaOrange[1] : undefined,
-        backgroundColor: isPostedByAlumni ? 'transparent' : undefined
-      }}
-    >
-      <Flex justify="space-between" align="center">
-        <Flex direction="column" gap="xs">
-          <Text fw={700} size="lg">{title}</Text>
-          <Text color="dimmed" size="sm">{company} ・ {location}</Text>
-          <Text size="sm" lineClamp={3}>{description}</Text>
-        </Flex>
-        <Avatar src={posterAvatar} alt={"Company Logo"} size={60} style={{ borderRadius: '50%' }} />
-      </Flex>
-      <Flex justify={isPostedByAlumni ? "space-between" : "flex-end"} align="center" mt="md">
-        {isPostedByAlumni && (
-          <Badge
-            color={theme.colors.customPapayaOrange[1]}
-            onClick={handleBadgeClick}
-            style={{
-              cursor: 'pointer',
-              color: theme.colors.background[0]
-            }}
-          >
-            Alumni-posted
-          </Badge>
-        )}  
-        <Button variant="light" color={isPostedByAlumni ? theme.colors.customPapayaOrange[1]: "blue"} size="sm" onClick={handleViewDetails}>
-          View Details
-        </Button>
-      </Flex>
-    </Card>
+    <UniversalJobCard 
+      data={jobData}
+      variant="job-board"
+      showDeleteButton={false}
+      showEditButton={false}
+    />
   );
 };
 
