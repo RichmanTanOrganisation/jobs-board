@@ -400,6 +400,9 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
             label="About"
             placeholder="Type job description here"
             minRows={4}
+            maxRows={11}
+            autosize
+            resize="vertical"
             className={styles.fullWidth}
             value={formData.description}
             onChange={(e) => handleInputChange('description', e.currentTarget.value)}

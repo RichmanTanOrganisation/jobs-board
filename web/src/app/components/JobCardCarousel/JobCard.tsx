@@ -249,7 +249,7 @@ export function JobCard({ data, onJobDeleted, onEditJob }: {
             
           </Flex>
 
-          <Text fw={700} size="sm" className={styles.text} lineClamp={3}>
+          <Text fw={700} size="sm" className={styles.text} style={{ whiteSpace: 'pre-wrap' }}>
             {data.description}
           </Text>
 

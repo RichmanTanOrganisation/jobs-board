@@ -1,4 +1,15 @@
 .text {
   position: relative;
   color: var(--mantine-color-customWhite-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  line-clamp: 3;
+  -webkit-line-clamp: 3;
+  /* same number as your lineClamp prop */
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+  /* allows breaking long words */
+  white-space: normal;
+  /* ensures wrapping is allowed */
 }
