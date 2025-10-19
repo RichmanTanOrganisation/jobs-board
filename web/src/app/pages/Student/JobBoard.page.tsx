@@ -1,4 +1,4 @@
-import { Divider, Grid, useMantineTheme, Container, Title, Group } from '@mantine/core';
+import { Divider, Grid, useMantineTheme, RangeSlider, Text, Stack } from '@mantine/core';
 import Filter from '../../components/Filter/Filter';
 import JobListing from '../../components/JobBoard/JobListing';
 import { useEffect, useState } from 'react';
@@ -6,10 +6,12 @@ import SearchBar from '../../components/SearchBar/SearchBar';
 
 export function JobBoard() {
   const [filterRoles, setFilterRoles] = useState<string[]>([]);
-  const [filterFields, setFilterFields] = useState<string[]>([]);
+  const [filterSpecs, setFilterSpecs] = useState<string[]>([]);
   const [isPortrait, setIsPortrait] = useState(window.innerHeight > window.innerWidth);
   const [searchInput, setSearchInput] = useState('');
+  const [range, setRange] = useState<[number, number]>([0, 100000]);
   const [search, setSearch] = useState('');
+  const [postedByFilter, setPostedByFilter] = useState<'all' | 'alumni' | 'sponsors'>('all');
   const theme = useMantineTheme();
 
   useEffect(() => {
@@ -30,8 +32,12 @@ export function JobBoard() {
             <Filter
               filterRoles={filterRoles}
               setFilterRoles={setFilterRoles}
-              filterFields={filterFields}
-              setFilterFields={setFilterFields}
+              filterSpecs={filterSpecs}
+              setFilterSpecs={setFilterSpecs}
+              postedByFilter={postedByFilter}
+              setPostedByFilter={setPostedByFilter}
+              range={range}
+              setRange={setRange}
             />
           </Grid.Col>
 
@@ -55,41 +61,39 @@ export function JobBoard() {
             />
             <JobListing
               filterRoles={filterRoles}
-              filterFields={filterFields}
+              filterSpecs={filterSpecs}
+              filterSalary={range}
               search={search}
+              postedByFilter={postedByFilter}
             />
           </Grid.Col>
         </>
       ) : (
-        <Grid.Col span={12}>
-          <Container size="xs" px="md">
-            <Title order={2} ta="center" mb="xs">
-              FSAE Jobs Board
-            </Title>
-
-            <SearchBar
-              search={searchInput}
-              setSearch={setSearchInput}
-              title=""
-              placeholder="Search jobs"
-              onSearch={handleSearch}
-            />
-
-            <Group justify="center" mt="xs" mb="sm">
-              <Filter
-                filterRoles={filterRoles}
-                setFilterRoles={setFilterRoles}
-                filterFields={filterFields}
-                setFilterFields={setFilterFields}
-              />
-            </Group>
-
-            <JobListing
-              filterRoles={filterRoles}
-              filterFields={filterFields}
-              search={search}
-            />
-          </Container>
+        <Grid.Col span={12} mt={90}>
+          <SearchBar
+            search={searchInput}
+            setSearch={setSearchInput}
+            title="Job Board"
+            placeholder="Search jobs"
+            onSearch={handleSearch}
+          />
+          <Filter
+            filterRoles={filterRoles}
+            setFilterRoles={setFilterRoles}
+            filterSpecs={filterSpecs}
+            setFilterSpecs={setFilterSpecs}
+            postedByFilter={postedByFilter}
+            setPostedByFilter={setPostedByFilter}
+            range={range}
+            setRange={setRange}
+          />
+          <JobListing
+            filterRoles={filterRoles}
+            filterSpecs={filterSpecs}
+            filterSalary={range}
+            search={search}
+            postedByFilter={postedByFilter}
+          />
         </Grid.Col>
       )}
     </Grid>

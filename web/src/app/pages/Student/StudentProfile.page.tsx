@@ -17,6 +17,11 @@ import { JobType } from '@/models/job-type';
 import { SubGroup } from '@/models/subgroup.model';
 import { jobTypeDisplayMap, subGroupDisplayMap } from '@/app/utils/field-display-maps';
 import { useMediaQuery } from '@mantine/hooks'; //hook to see if user is on a phone for mobile frontend view -carl
+import { ActivateDeactivateAccountButton } from '@/app/components/AdminDashboard/ActivateDeactivateAccountButton';
+import { FsaeRole } from '@/models/roles';
+        
+
+
 
 export function StudentProfile() {
   const { id } = useParams();
@@ -41,14 +46,14 @@ export function StudentProfile() {
 
   const handleAvatarChange = () => {
     setModalType('avatar');
-    setModalContent(<EditAvatar avatar={'avatar'} />);
+    setModalContent(<EditAvatar avatar={""} role={"member"} />);
     setModalTitle('Profile Photo');
     setOpenProfileModal(true);
   };
 
   const handleBannerChange = () => {
     setModalType('banner');
-    setModalContent(<EditBannerModal banner={'banner'} />);
+    setModalContent(<EditBannerModal banner={""} role={"member"} />);
     setModalTitle('Banner Photo');
     setOpenProfileModal(true);
   };
@@ -94,17 +99,15 @@ export function StudentProfile() {
     if (!id) return;
     const token = localStorage.getItem('accessToken');
     if (!token) return;
-    try {
-      const response = await fetch(`http://localhost:3000/user/member/${id}/avatar`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) return;
-      const blob = await response.blob();
+    const res = await fetch(`http://localhost:3000/user/member/${id}/avatar`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      setUserData((prev) => (prev ? { ...prev, avatarURL: url } : prev));
-      return () => URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Error fetching avatar:', err);
+      setUserData(prev => prev ? { ...prev, avatarURL: url } : prev);
+    } else {
+      setUserData(prev => prev ? { ...prev, avatarURL: '' } : prev);
     }
   };
 
@@ -112,39 +115,67 @@ export function StudentProfile() {
     if (!id) return;
     const token = localStorage.getItem('accessToken');
     if (!token) return;
-    try {
-      const response = await fetch(`http://localhost:3000/user/member/${id}/banner`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) return;
-      const blob = await response.blob();
+    const res = await fetch(`http://localhost:3000/user/member/${id}/banner`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      setUserData((prev) => (prev ? { ...prev, bannerURL: url } : prev));
-      return () => URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Error fetching banner:', err);
+      setUserData(prev => prev ? { ...prev, bannerURL: url } : prev);
+    } else {
+      setUserData(prev => prev ? { ...prev, bannerURL: '' } : prev);
     }
   };
 
   useEffect(() => {
+    // Logic to fetch data and setUserData
+    let isMounted = true;
+
     const fetchUserData = async () => {
       try {
-        const userData = await fetchMemberById(id as string);
+        // Fetch user data, avatar, and banner
+        const token = localStorage.getItem('accessToken');
+        const userPromise = fetchMemberById(id as string);
+        let avatarPromise = Promise.resolve<string | undefined>(undefined);
+        let bannerPromise = Promise.resolve<string | undefined>(undefined);
+
+        if (token) {
+          avatarPromise = fetch(`http://localhost:3000/user/member/${id}/avatar`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(res => res.ok ? res.blob() : null)
+            .then(blob => blob ? URL.createObjectURL(blob) : undefined);
+
+          bannerPromise = fetch(`http://localhost:3000/user/member/${id}/banner`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(res => res.ok ? res.blob() : null)
+          .then(blob => blob ? URL.createObjectURL(blob) : undefined);
+        }
+
+        const userData = await userPromise;
         if (!userData) {
-          navigate('/404');
+          if (isMounted) navigate("/404");
           return;
         }
-        setUserData(userData);
-        setIsLocalProfile(userData.id == userId);
+        if (isMounted) {
+          setUserData(userData);
+          setIsLocalProfile(userData.id == userId);
+        }
+
+        const [avatarURL, bannerURL] = await Promise.all([avatarPromise, bannerPromise]);
+        if (isMounted) {
+          setUserData(prev => prev ? { ...prev, avatarURL: avatarURL || "", bannerURL: bannerURL || "" } : prev);
+        }
+
       } catch (err) {
-        console.error('Error fetching user data:', err);
-        navigate('/404');
+        if (isMounted) {
+          navigate("/404");
+        }
       }
     };
+
     if (id) fetchUserData();
-    fetchAvatar();
-    fetchBanner();
-  }, [id]);
+    return () => {
+      isMounted = false;
+    };
+  }, [id, userId, navigate]);
 
   return (
     <Box className={styles.container}>
@@ -213,6 +244,16 @@ export function StudentProfile() {
         <Text size="md" className={styles.text}>
           {userData?.lookingFor ? `Looking for: ${jobTypeDisplayMap[userData.lookingFor]}` : ''}
         </Text>
+
+        {userRole === "admin" && (
+          <Box style={{ position: 'absolute', top: 20, right: 20 }}>
+            <ActivateDeactivateAccountButton 
+              userId={id} 
+              role={FsaeRole.MEMBER}
+              activated={userData?.activated}
+            />
+          </Box>
+        )}
       </Card>
 
       {isLocalProfile ? (
@@ -376,15 +417,27 @@ export function StudentProfile() {
         </Grid.Col>
       </Grid>
 
-      <EditModal
-        opened={openProfileModal}
-        close={() => {
-          setOpenProfileModal(false);
-          if (modalType === 'avatar') fetchAvatar();
-          if (modalType === 'banner') fetchBanner();
-        }}
-        content={modalContent}
-        title={modalTitle}
+      {isLocalProfile && (
+        <EditModal
+          opened={openProfileModal}
+          close={() => {
+            setOpenProfileModal(false);
+            if (modalType === 'avatar') {
+              fetchAvatar();
+            }
+            if (modalType === 'banner') {
+              fetchBanner();
+            }
+          }}
+          content={modalContent}
+          title={modalTitle}
+        ></EditModal>
+      )}
+
+      <DeactivateAccountModal
+        onClose={() => setDeactivateModalOpen(false)}
+        onConfirm={handleDeactivateAccount}
+        opened={deactivateModalOpen}
       />
       <DeactivateAccountModal onClose={() => setDeactivateModalOpen(false)} onConfirm={handleDeactivateAccount} opened={deactivateModalOpen} />
     </Box>

@@ -9,11 +9,19 @@ import { usePagination } from '@/hooks/usePagination';
 
 interface JobListingProps {
   filterRoles: string[];
-  filterFields: string[];
+  filterSpecs: string[];
+  filterSalary: [number, number];
   search: string;
+  postedByFilter: 'all' | 'alumni' | 'sponsors';
 }
 
-const JobListing: FC<JobListingProps> = ({ filterRoles, filterFields, search }) => {
+const JobListing: FC<JobListingProps> = ({
+  filterRoles,
+  filterSpecs,
+  filterSalary,
+  search,
+  postedByFilter,
+}) => {
   const [jobListings, setJobListings] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,64 +43,108 @@ const JobListing: FC<JobListingProps> = ({ filterRoles, filterFields, search }) 
     fetchData();
   }, [search]);
 
+  // Step 0: Exlude expired jobs
+  const activeJobs = jobListings.filter((job) => {
+    if (!job.applicationDeadline) {
+      return true; // Keep if no deadline
+    }
+    const parsed = Date.parse(job.applicationDeadline);
+    if (isNaN(parsed)) {
+      return true;
+    }
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    return parsed >= startOfToday.getTime(); // include if deadline is today or in future
+  });
+
   // Carl : Filter job listings based on role type
-  // Step 1: apply role/field filters
-  const byFilter = jobListings.filter(job =>
-    job.roleType &&
-    (filterRoles.length === 0 ||
-      filterRoles.includes(job.roleType.toLowerCase()))
-    || (!job.roleType && filterRoles.length === 0)
-  );
+  // Step 1: apply role/field/salary filters
+  const byFilter = activeJobs.filter((job) => {
+    const roleMatch =
+      (job.roleType &&
+        (filterRoles.length === 0 || filterRoles.includes(job.roleType.toLowerCase()))) ||
+      (!job.roleType && filterRoles.length === 0);
+
+    // salary filter
+    let salaryMatch = true;
+    if (job.salary && filterSalary) {
+      let min: number, max: number;
+      // filter out the normalized salaries and negotiable/voluntary etc
+      if (job.salary.includes('-')) {
+        [min, max] = job.salary.split('-').map(Number);
+      } else {
+        // if negotiable or voluntary, treat as $0
+        min = 0;
+        max = 0;
+      }
+
+      salaryMatch = max >= filterSalary[0] && min <= filterSalary[1];
+    }
+
+    return roleMatch && salaryMatch;
+  });
+
+  // Step 2: field filter (not implemented)
+
+  // Step 3: apply Posted By filter
+  const byPostedByFilter = (() => {
+    if (postedByFilter === 'alumni') {
+      return byFilter.filter((job) => job.isPostedByAlumni === true);
+    } else if (postedByFilter === 'sponsors') {
+      return byFilter.filter(
+        (job) => job.isPostedByAlumni === undefined || job.isPostedByAlumni === false
+      );
+    }
+    return byFilter;
+  })();
 
   // Client-side text search across title/description/specialisation
   const searchLower = (search || '').trim().toLowerCase();
   const bySearch = searchLower
-    ? byFilter.filter(job => {
+    ? byPostedByFilter.filter((job) => {
         const title = (job.title || '').toLowerCase();
         const desc = (job.description || '').toLowerCase();
         const spec = (job.specialisation || '').toLowerCase();
-        const match = title.includes(searchLower) || desc.includes(searchLower) || spec.includes(searchLower);
+        const match =
+          title.includes(searchLower) || desc.includes(searchLower) || spec.includes(searchLower);
         return match;
       })
-    : byFilter;
+    : byPostedByFilter;
 
   const filteredJobListings = bySearch;
 
   // Use the pagination hook
-  const { activePage, setActivePage, paginatedData, totalPages } = usePagination(filteredJobListings, 6);
+  const { activePage, setActivePage, paginatedData, totalPages } = usePagination(
+    filteredJobListings,
+    6
+  );
 
   // Reset page to 1 whenever filters or search changes
-  useEffect(() => setActivePage(1), [search, filterRoles, filterFields, setActivePage]);
+  useEffect(
+    () => setActivePage(1),
+    [search, filterRoles, filterSpecs, postedByFilter, setActivePage]
+  );
 
-  useEffect(() => { if (error) console.error('[JobListing] error=', error); }, [error]);
+  useEffect(() => {
+    if (error) console.error('[JobListing] error=', error);
+  }, [error]);
 
   return (
     <Flex justify="flex-start" align="flex-start" direction="column" gap="md">
       <Container className={styles.listingInnerContainer} fluid>
         {loading && <Loader />}
         {error && <Text color="red">{error}</Text>}
-        {!loading && !error && paginatedData.length === 0 && (
-          <Text>No jobs available.</Text>
-        )}
-        {!loading && !error && paginatedData.map((job) => (
-          <JobListingItem
-            key={job.id}
-            id={job.id}
-            title={job.title}
-            description={job.description}
-            // pass publisherID as company (or change to publisher name if you have it)
-            company={job.publisherID}
-            // existing mapping used specialisation for location; keep that if desired
-            location={job.specialisation}
-            // extra fields forwarded so badges and dates render
-            roleType={job.roleType}
-            specialisation={job.specialisation}
-            salary={job.salary}
-            applicationDeadline={job.applicationDeadline}
-            datePosted={job.datePosted}
-
-          />
-        ))}
+        {!loading && !error && paginatedData.length === 0 && <Text>No jobs available.</Text>}
+        {!loading &&
+          !error &&
+          paginatedData.map((job) => (
+            <JobListingItem
+              key={job.id}
+              job={job}
+            />
+          ))}
       </Container>
 
       {!loading && filteredJobListings.length > 0 && (

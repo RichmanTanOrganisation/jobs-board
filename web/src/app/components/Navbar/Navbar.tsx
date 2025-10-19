@@ -13,28 +13,105 @@ import {
   Burger,
   AppShell,
   Divider,
+  Popover,
+  ScrollArea,
+  UnstyledButton,
+  Badge,
+  ThemeIcon,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Role } from '@/app/type/role';
-import { IconUserCircle, IconBell, IconLogout, IconSettings, IconBriefcase2 } from '@tabler/icons-react';
+import {
+  IconUserCircle,
+  IconBell,
+  IconLogout,
+  IconSettings,
+  IconBriefcase2,
+  IconSpeakerphone,
+} from '@tabler/icons-react';
 import styles from './Navbar.module.css';
 import SettingModal from '../Modal/EditModal';
 import { EditSetting } from '../Modal/EditSetting';
 import { resetUser } from '../../features/user/userSlice';
+import { notificationApi } from '@/api/notification';
+import type { Notification, NotificationType } from '@/models/notification';
+
+function timeAgo(d: string | Date) {
+  const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+  const t = (n: number, u: string) => `${n} ${u}${n > 1 ? 's' : ''} ago`;
+  if (s < 60) return t(s, 'sec');
+  const m = Math.floor(s / 60);
+  if (m < 60) return t(m, 'min');
+  const h = Math.floor(m / 60);
+  if (h < 24) return t(h, 'hour');
+  const dd = Math.floor(h / 24);
+  if (dd < 7) return t(dd, 'day');
+  return new Date(d).toLocaleDateString();
+}
 
 function Navbar() {
-  // Use Redux State Management
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  function isRole(value: any): value is Role {
-    return value === Role.Member || value === Role.Sponsor || value === Role.Alumni || value === Role.Admin;
-  }
+
+  const isRole = (value: any): value is Role =>
+    value === Role.Member ||
+    value === Role.Sponsor ||
+    value === Role.Alumni ||
+    value === Role.Admin;
 
   const role = useSelector((state: RootState) => state.user.role);
   const id = useSelector((state: RootState) => state.user.id);
-  
 
-  // Define navigation links based on user type
+  const [unread, setUnread] = useState(0);
+  const [notifs, setNotifs] = useState<Notification[]>([]);
+  const [notifsOpen, setNotifsOpen] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!role || !id) {
+        setUnread(0);
+        return;
+      }
+      try {
+        const [n, a] = await Promise.all([
+          notificationApi.getNotifications(role, id),
+          notificationApi.getAnnouncements(role),
+        ]);
+        if (!cancelled) setUnread((n?.unreadCount ?? 0) + (a?.unreadCount ?? 0));
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [role, id]);
+
+  const handleNotificationClick = async () => {
+    if (!role || !id) return;
+    try {
+      const [n, a] = await Promise.all([
+        notificationApi.getNotifications(role, id),
+        notificationApi.getAnnouncements(role),
+      ]);
+
+      const merged = [...(n.notifications ?? []), ...(a.announcements ?? [])].sort(
+        (x, y) => new Date(y.createdAt).getTime() - new Date(x.createdAt).getTime()
+      );
+
+      setNotifs(merged);
+      setNotifsOpen(true);
+
+      await Promise.all([
+        notificationApi.markAsRead(role, id),
+        notificationApi.ackAnnouncements(role),
+      ]);
+
+      setUnread(0);
+      setNotifs((curr) => curr.map((x) => ({ ...x, read: true })));
+    } catch {}
+  };
+
   const navLinks: { [key in Role]: { path: string; label: string }[] } = {
     [Role.Member]: [
       { path: '/jobs', label: 'Jobs' },
@@ -42,17 +119,17 @@ function Navbar() {
       { path: '/alumni', label: 'Alumni' },
     ],
     [Role.Sponsor]: [
-      { path: '/members', label: 'Students' },
+      { path: '/members', label: 'Members' },
       { path: '/alumni', label: 'Alumni' },
     ],
     [Role.Alumni]: [
-      { path: '/members', label: 'Students' },
+      { path: '/members', label: 'Members' },
       { path: '/sponsors', label: 'Sponsors' },
       { path: '/alumni', label: 'Alumni' },
     ],
     [Role.Admin]: [
       { path: '/jobs', label: 'Job Board' },
-      { path: '/members', label: 'Students' },
+      { path: '/members', label: 'Members' },
       { path: '/sponsors', label: 'Sponsors' },
       { path: '/alumni', label: 'Alumni' },
       { path: '/admin-dashboard', label: 'Dashboard' },
@@ -65,7 +142,7 @@ function Navbar() {
     localStorage.removeItem('accessToken');
     navigate('/');
   };
-  // Redirect to the user's profile page based on their type
+
   const handleProfileClick = () => {
     if (role) {
       const profilePath = {
@@ -77,7 +154,6 @@ function Navbar() {
       }[role as Role];
       navigate(profilePath);
     } else {
-      // Handle the case where role is null
       navigate('/login');
     }
   };
@@ -93,7 +169,6 @@ function Navbar() {
       }[role as Role];
       navigate(jobPath);
     } else {
-      // Handle the case where role is null
       navigate('/login');
     }
   };
@@ -101,24 +176,19 @@ function Navbar() {
   const [opened, { toggle, open, close }] = useDisclosure();
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [openModal, setOpenModal] = useState(false);
-
-  const handleSetting = () => {
-    setOpenModal(true);
-  };
+  const handleSetting = () => setOpenModal(true);
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    // Set initial state
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
     handleResize();
     window.addEventListener('resize', handleResize);
-
-    // Cleanup listener on component unmount
     return () => {
       window.removeEventListener('resize', handleResize);
     };
   }, []);
+
+  const iconFor = (t: NotificationType) =>
+    t === 'announcement' ? <IconSpeakerphone size={18} /> : <IconBell size={18} />;
 
   return (
     <>
@@ -136,7 +206,6 @@ function Navbar() {
           <Image radius="md" h={20} src="/fsae_white_and_orange_logo.png" alt="FSAE Logo" />
         </NavLink>
 
-        {/* Desktop Navigation Links */}
         <Flex justify="center" align="center" style={{ flex: 1 }}>
           {!isMobile && role && isRole(role) && (
             <Group gap={100}>
@@ -219,19 +288,17 @@ function Navbar() {
           </Flex>
         )}
 
-        {/* Burger Menu Button (only visible on mobile) */}
         {isMobile && (
           <Burger
             opened={opened}
             onClick={toggle}
             aria-label="Toggle navigation"
             size="sm"
-            color="white" // Ensure burger is visible
+            color="white"
           />
         )}
       </Flex>
 
-      {/* Mobile Navigation Drawer */}
       <AppShell
         header={{ height: 0 }}
         navbar={{ width: 300, breakpoint: 'sm', collapsed: { mobile: !opened } }}
@@ -249,7 +316,6 @@ function Navbar() {
             />
           </Group>
           <Divider my="sm" />
-
           {role && isRole(role) ? (
             <>
               <Flex className={styles.mobileButtonsContainer}>

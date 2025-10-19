@@ -21,6 +21,8 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../../app/store';
 import { jwtDecode } from 'jwt-decode';
 import DeactivateAccountModal from '../../components/Modal/DeactivateAccountModal';
+import { ActivateDeactivateAccountButton } from '@/app/components/AdminDashboard/ActivateDeactivateAccountButton';
+import { FsaeRole } from '@/models/roles';
 import { editSponsorById } from '@/api/sponsor';
 import { useMediaQuery } from '@mantine/hooks';
  
@@ -50,20 +52,20 @@ import { useMediaQuery } from '@mantine/hooks';
   
   const userRole = useSelector((state: RootState) => state.user.role); // the id of the local user
   const userId = useSelector((state: RootState) => state.user.id); // the id of the local user
-/*
+
   const handleAvatarChange = () => {
     setModalType('avatar');
-    setModalContent(<EditAvatar avatar={userData?.avatar} />);
+    setModalContent(<EditAvatar avatar={""} role={"sponsor"} />);
     setModalTitle('Profile Photo');
     setOpenProfileModal(true);
   };
 
   const handleBannerChange = () => {
     setModalType('banner');
-    setModalContent(<EditBannerModal banner={userData?.banner} />);
+    setModalContent(<EditBannerModal banner={""} role={"sponsor"} />);
     setModalTitle('Banner Photo');
     setOpenProfileModal(true);
-  };*/
+  };
 
   const handleProfileChange = () => {
     setModalType('profile');
@@ -83,6 +85,38 @@ import { useMediaQuery } from '@mantine/hooks';
   const handleDeactivateUserChange = () => {
     setModalType('deactivateUser');
     setOpenModal(true);
+  };
+
+  const fetchAvatar = async () => {
+    if (!id) return;
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+    const res = await fetch(`http://localhost:3000/user/sponsor/${id}/avatar`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setUserData(prev => prev ? { ...prev, avatarURL: url } : prev);
+    } else {
+      setUserData(prev => prev ? { ...prev, avatarURL: '' } : prev);
+    }
+  };
+
+  const fetchBanner = async () => {
+    if (!id) return;
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+    const res = await fetch(`http://localhost:3000/user/sponsor/${id}/banner`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setUserData(prev => prev ? { ...prev, bannerURL: url } : prev);
+    } else {
+      setUserData(prev => prev ? { ...prev, bannerURL: '' } : prev);
+    }
   };
 
   // Fetch jobs from the database
@@ -128,15 +162,38 @@ import { useMediaQuery } from '@mantine/hooks';
   };
 
   useEffect(() => {
+    let isMounted = true;
     const fetchUserData = async () => {
       try {
-        const userData = await fetchSponsorById(id as string);
+        // Fetch user data, avatar, and banner
+        const token = localStorage.getItem('accessToken');
+        const userPromise = fetchSponsorById(id as string);
+        let avatarPromise = Promise.resolve<string | undefined>(undefined);
+        let bannerPromise = Promise.resolve<string | undefined>(undefined);
+
+        if (token) {
+          avatarPromise = fetch(`http://localhost:3000/user/sponsor/${id}/avatar`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(res => res.ok ? res.blob() : null)
+            .then(blob => blob ? URL.createObjectURL(blob) : undefined);
+
+          bannerPromise = fetch(`http://localhost:3000/user/sponsor/${id}/banner`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(res => res.ok ? res.blob() : null)
+          .then(blob => blob ? URL.createObjectURL(blob) : undefined);
+        }
+
+        const userData = await userPromise;
         if (!userData) {
           navigate("/404");
           return;
         }
-        setUserData(userData);
-        setIsLocalProfile(userData.id == userId);
+        if (isMounted) {
+          setUserData(userData);
+          setIsLocalProfile(userData.id == userId);
+        }
+        const [avatarURL, bannerURL] = await Promise.all([avatarPromise, bannerPromise]);
+        if (isMounted) {
+          setUserData(prev => prev ? { ...prev, avatarURL: avatarURL || "", bannerURL: bannerURL || "" } : prev);
+        }
         const jobs: Job[] = await fetchJobsByPublisherId(id as string);
         const jobsForJobCard = jobs.map((thisJob) => {
           return {
@@ -157,7 +214,7 @@ import { useMediaQuery } from '@mantine/hooks';
       }
     };
     if (id) fetchUserData();
-  }, [id]);
+  }, [id, navigate, userId]);
 
   useEffect(() => {
     loadJobs();
@@ -228,14 +285,7 @@ import { useMediaQuery } from '@mantine/hooks';
     switch (element) {
       case 'profileBtn':
         return (
-          <Button
-            onClick={handleDeactivateUserChange}
-            classNames={{
-              root: styles.button_admin_root,
-            }}
-          >
-            Deactivate User
-          </Button>
+          null
         );
       case 'addNewBtn':
         return null;
@@ -249,7 +299,7 @@ import { useMediaQuery } from '@mantine/hooks';
         <Card.Section
           h={250}
           className={styles.banner}
-          //onClick={handleBannerChange}
+          onClick={handleBannerChange}
           style={{ backgroundImage: `url(${userData?.bannerURL})` }}
         />
         <Box className={styles.name}>
@@ -281,7 +331,7 @@ import { useMediaQuery } from '@mantine/hooks';
           mt={isMobile ? -55 : -100}
           ml={isMobile ? 0 : 10}
           className={styles.avatar}
-          //onClick={handleAvatarChange}
+          onClick={handleAvatarChange}
         />
         <Box className={styles.text}>
           <EditableField
@@ -299,6 +349,15 @@ import { useMediaQuery } from '@mantine/hooks';
             size="lg"
           />
         </Box>
+        {userRole === "admin" && (
+          <Box style={{ position: 'absolute', top: 20, right: 20 }}>
+            <ActivateDeactivateAccountButton 
+              userId={id} 
+              role={FsaeRole.SPONSOR}
+              activated={userData?.activated}
+            />
+          </Box>
+        )}
       </Card>
 
       <Flex className={styles.profileBtn}>
@@ -414,12 +473,23 @@ import { useMediaQuery } from '@mantine/hooks';
           </Box>
         </Grid.Col>
       </Grid>
-      <EditModal
-        opened={openProfileModal}
-        close={() => setOpenProfileModal(false)}
-        content={modalContent}
-        title={modalTitle}
-      ></EditModal>
+
+      {isLocalProfile && (
+        <EditModal
+          opened={openProfileModal}
+          close={() => {
+            setOpenProfileModal(false);
+            if (modalType === 'avatar') {
+              fetchAvatar();
+            }
+            if (modalType === 'banner') {
+              fetchBanner();
+            }
+          }}
+          content={modalContent}
+          title={modalTitle}
+        ></EditModal>
+      )}
 
       <JobEditorModal
         opened={openJobEditorModal}

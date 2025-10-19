@@ -4,25 +4,31 @@ import {FsaeUser} from './fsae-user.model';
 @model()
 export class Sponsor extends FsaeUser {
   @property({
-    type: 'string', 
-    required: true
+    type: 'string',
+    required: true,
   })
   companyName: string;
 
   @property({
-    type: 'string', 
+    type: 'string',
     required: false, // "required: true" demands non-empty strings, so it is turned off here
-    default: ""
+    default: '',
   })
   websiteURL: string;
 
-
   @property({
-    type: 'string', 
+    type: 'string',
     required: false, // "required: true" demands non-empty strings, so it is turned off here
-    default: ""
+    default: '',
   })
   industry: string;
+
+  @property({
+    type: 'date',
+    required: true,
+    defaultFn: 'now',
+  })
+  lastSeenAnnouncementsAt: Date;
 
   constructor(data?: Partial<Sponsor>) {
     super(data);

@@ -22,6 +22,8 @@ import DeactivateAccountModal from '../../components/Modal/DeactivateAccountModa
 import { subGroupDisplayMap } from '@/app/utils/field-display-maps';
 import { SubGroup } from '@/models/subgroup.model';
 import { useMediaQuery } from '@mantine/hooks';
+import { ActivateDeactivateAccountButton } from '@/app/components/AdminDashboard/ActivateDeactivateAccountButton';
+import { FsaeRole } from '@/models/roles';
 
 export function AlumniProfile() {
   const isMobile = useMediaQuery('(max-width: 500px)');
@@ -48,7 +50,21 @@ export function AlumniProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // Handle profile editing modal
+  
+  const handleAvatarChange = () => {
+    setModalType('avatar');
+    setOpenProfileModal(true);
+    setModalContent(<EditAvatar avatar={""} role={"alumni"} />);
+    setModalTitle('Profile Photo');
+  };
+
+  const handleBannerChange = () => {
+    setModalType('banner');
+    setOpenProfileModal(true);
+    setModalContent(<EditBannerModal banner={""} role={"alumni"} />)
+    setModalTitle('Banner Photo');
+  };
+  
   const handleProfileChange = () => {
     setOpenProfileModal(true);
     setModalContent(
@@ -68,7 +84,40 @@ export function AlumniProfile() {
     setOpenModal(true);
   };
 
-  // Handle job save → refresh jobs
+  const fetchAvatar = async () => {
+    if (!id) return;
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+    const res = await fetch(`http://localhost:3000/user/alumni/${id}/avatar`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setUserData(prev => prev ? { ...prev, avatarURL: url } : prev);
+    } else {
+      setUserData(prev => prev ? { ...prev, avatarURL: '' } : prev);
+    }
+  };
+
+  const fetchBanner = async () => {
+    if (!id) return;
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+    const res = await fetch(`http://localhost:3000/user/alumni/${id}/banner`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setUserData(prev => prev ? { ...prev, bannerURL: url } : prev);
+    } else {
+      setUserData(prev => prev ? { ...prev, bannerURL: '' } : prev);
+    }
+  };
+
+  const [userData, setUserData] = useState<Alumni | null>(null);
+  
   const handleJobSaved = () => {
     const fetchUserData = async () => {
       try {
@@ -101,15 +150,40 @@ export function AlumniProfile() {
 
   // Fetch alumni data + jobs
   useEffect(() => {
+    // Logic to fetch data and setUserData
+    let isMounted = true;
+
     const fetchUserData = async () => {
       try {
-        const userData = await fetchAlumniById(id as string);
+        // Fetch user data, avatar, and banner
+        const token = localStorage.getItem('accessToken');
+        const userPromise = fetchAlumniById(id as string);
+        let avatarPromise = Promise.resolve<string | undefined>(undefined);
+        let bannerPromise = Promise.resolve<string | undefined>(undefined);
+
+        if (token) {
+          avatarPromise = fetch(`http://localhost:3000/user/alumni/${id}/avatar`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(res => res.ok ? res.blob() : null)
+            .then(blob => blob ? URL.createObjectURL(blob) : undefined);
+
+          bannerPromise = fetch(`http://localhost:3000/user/alumni/${id}/banner`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(res => res.ok ? res.blob() : null)
+          .then(blob => blob ? URL.createObjectURL(blob) : undefined);
+        }
+
+        const userData = await userPromise;
         if (!userData) {
           navigate("/404");
           return;
         }
-        setUserData(userData);
-        setIsLocalProfile(userData.id == userId);
+        if (isMounted) {
+          setUserData(userData);
+          setIsLocalProfile(userData.id == userId);
+        }
+        const [avatarURL, bannerURL] = await Promise.all([avatarPromise, bannerPromise]);
+        if (isMounted) {
+          setUserData(prev => prev ? { ...prev, avatarURL: avatarURL || "", bannerURL: bannerURL || "" } : prev);
+        }
         const jobs: Job[] = await fetchJobsByPublisherId(id as string);
         const jobsForJobCard = jobs.map((thisJob) => ({
           id: thisJob.id,
@@ -124,11 +198,15 @@ export function AlumniProfile() {
         }));
         setJobData(jobsForJobCard);
       } catch (err) {
-        console.error(err);
+        if (isMounted) {
+          navigate("/404");
+        }
+        // TODO: proper error handling (eg. auth errors/forbidden pages etc.)
+        //navigate("/404")
       }
     };
     if (id) fetchUserData();
-  }, [id]);
+   }, [id, navigate, userId]);
 
   // Role-based UI elements
   const getElementBasedOnRole = (element: string) => {
@@ -171,12 +249,7 @@ export function AlumniProfile() {
     switch (element) {
       case 'profileBtn':
         return (
-          <Button
-            onClick={handleDeactivateUserChange}
-            classNames={{ root: styles.button_admin_root }}
-          >
-            Deactivate User
-          </Button>
+          null
         );
     }
   };
@@ -188,7 +261,8 @@ export function AlumniProfile() {
         <Card.Section
           h={250}
           className={styles.banner}
-          style={{ backgroundImage: `url(${userData?.bannerURL})` }}
+          onClick={handleBannerChange}
+          style={{ backgroundImage: `url(${userData?.bannerURL})`}}
         />
 
         {/* Avatar → Name → Subgroup (stacked) */}
@@ -198,39 +272,27 @@ export function AlumniProfile() {
             size={isMobile ? 110 : 150}
             className={styles.avatar}
           />
-          {/* Name from EditableFields, no UNKNOWN fallback */}
-          <Flex>
-            <EditableField
-              value={userData?.firstName || ''}
-              placeholder="First name"
-              fieldName="firstName"
-              userId={id as string}
-              userRole="alumni"
-              onUpdate={(_, value) => userData && setUserData({ ...userData, firstName: value })}
-              editable={isLocalProfile}
-              required
-              validation={(value) => (!value.trim() ? 'First name is required' : null)}
-              className={styles.firstName}
+        </Box>
+        <Avatar
+          src={userData?.avatarURL}
+          size={150}
+          mt={-100}
+          ml={10}
+          className={styles.avatar}
+          onClick={handleAvatarChange}
+        />
+        <Text size="lg" mt={-50} ml={170} className={styles.text}>
+          {`${userData?.subGroup ? subGroupDisplayMap[userData?.subGroup] : ""}`}
+        </Text>
+        {userRole === "admin" && (
+          <Box style={{ position: 'absolute', top: 20, right: 20 }}>
+            <ActivateDeactivateAccountButton 
+              userId={id} 
+              role={FsaeRole.ALUMNI}
+              activated={userData?.activated}
             />
-            <EditableField
-              value={userData?.lastName || ''}
-              placeholder="Last name"
-              fieldName="lastName"
-              userId={id as string}
-              userRole="alumni"
-              onUpdate={(_, value) => userData && setUserData({ ...userData, lastName: value })}
-              editable={isLocalProfile}
-              required
-              validation={(value) => (!value.trim() ? 'Last name is required' : null)}
-              className={styles.lastName}
-            />
-          </Flex>
-          {userData?.subGroup && (
-            <Text size="sm" className={styles.subGroup}>
-              {subGroupDisplayMap[userData.subGroup]}
-            </Text>
-          )}
-        </Flex>
+          </Box>
+        )}
       </Card>
 
       {/* Profile controls */}
@@ -309,13 +371,23 @@ export function AlumniProfile() {
         </Grid.Col>
       </Grid>
 
-      {/* Modals */}
-      <EditModal
-        opened={openProfileModal}
-        close={() => setOpenProfileModal(false)}
-        content={modalContent}
-        title={modalTitle}
-      />
+      {isLocalProfile && (
+        <EditModal
+          opened={openProfileModal}
+          close={() => {
+            setOpenProfileModal(false);
+            if (modalType === 'avatar') {
+              fetchAvatar();
+            }
+            if (modalType === 'banner') {
+              fetchBanner();
+            }
+          }}
+          content={modalContent}
+          title={modalTitle}
+        ></EditModal>
+      )}
+
       <JobEditorModal
         opened={openJobEditorModal}
         onClose={() => setOpenJobEditorModal(false)}
