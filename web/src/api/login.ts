@@ -61,3 +61,24 @@ export async function login(email: string, password: string) {
     throw e;
   }
 }
+
+export async function validateInviteCode(inviteCode: string, token: string | null) {
+  try {
+    if (!token) {
+      throw Error('No token provided');
+    }
+
+    const res = await apiInstance.post(
+      '/auth/validate-code',
+      { code: inviteCode },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return res;
+  } catch (err) {
+    throw err;
+  }
+}

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { apiInstance } from '@/api/ApiInstance';
 import { adminApi } from '@/api/admin';
+import { validateInviteCode } from '@/api/login';
 
 export function CodeGate() {
   const [inputValue, setInputValue] = useState('');
@@ -30,16 +31,7 @@ export function CodeGate() {
         toast.error('Token does not exist.');
         return;
       }
-
-      const res = await apiInstance.post(
-        '/auth/validate-code',
-        { code: inputValue },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const res = await validateInviteCode(inputValue, token);
 
       setAttempts(0);
       localStorage.removeItem(attemptsKey);
