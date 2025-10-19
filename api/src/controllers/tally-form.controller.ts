@@ -787,6 +787,7 @@ export class TallyFormController {
                   job_title: {type: 'string'},
                   submitted_at: {type: 'string'},
                   form_title: {type: 'string'},
+                  job_deleted: {type: 'boolean'},
                 },
               },
             },
@@ -804,6 +805,7 @@ export class TallyFormController {
       job_title: string;
       submitted_at: string;
       form_title: string;
+      job_deleted: boolean;
     }>;
   }> {
     try {
@@ -824,17 +826,30 @@ export class TallyFormController {
       // Fetch form and job details for each submission
       const enrichedSubmissions = await Promise.all(
         submissions.map(async sub => {
-          const form = await this.tallyFormRepository.findById(sub.formId);
-          const job = await this.jobAdRepository.findById(form.jobId);
+          try {
+            const form = await this.tallyFormRepository.findById(sub.formId);
+            const job = await this.jobAdRepository.findOne({where: {id: form.jobId}});
 
-          return {
-            id: sub.id!,
-            job_id: form.jobId,
-            job_title: job.title,
-            // status removed - not exposed to applicants for privacy
-            submitted_at: sub.submittedAt.toISOString(),
-            form_title: form.formTitle,
-          };
+            return {
+              id: sub.id!,
+              job_id: form.jobId,
+              job_title: job?.title ?? 'Job No Longer Available',
+              submitted_at: sub.submittedAt.toISOString(),
+              form_title: form.formTitle,
+              job_deleted: !job,
+            };
+          } catch (error) {
+            // Handle case where form might also be deleted
+            console.warn(`Error fetching submission details for ${sub.id}:`, error);
+            return {
+              id: sub.id!,
+              job_id: sub.formId,
+              job_title: 'Job No Longer Available',
+              submitted_at: sub.submittedAt.toISOString(),
+              form_title: 'Application',
+              job_deleted: true,
+            };
+          }
         }),
       );
 
