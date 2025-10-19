@@ -19,7 +19,12 @@ import {inject} from '@loopback/core';
 import {SecurityBindings, UserProfile} from '@loopback/security';
 
 import {FsaeRole, Notification} from '../models';
-import {MemberRepository} from '../repositories';
+import {
+  MemberRepository,
+  TallySubmissionRepository,
+  TallyFormRepository,
+  JobAdRepository,
+} from '../repositories';
 import {AnnouncementRepository} from '../repositories/announcements.repository';
 import {
   MemberProfileDto,
@@ -37,6 +42,12 @@ export class MemberController {
     @inject(RestBindings.Http.REQUEST) private req: Request,
     @inject(SecurityBindings.USER) protected currentUserProfile: UserProfile,
     @repository(MemberRepository) public memberRepository: MemberRepository,
+    @repository(TallySubmissionRepository)
+    public tallySubmissionRepository: TallySubmissionRepository,
+    @repository(TallyFormRepository)
+    public tallyFormRepository: TallyFormRepository,
+    @repository(JobAdRepository)
+    public jobAdRepository: JobAdRepository,
     @repository(AnnouncementRepository)
     public announcementRepository: AnnouncementRepository,
   ) {

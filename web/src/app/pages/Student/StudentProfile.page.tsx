@@ -17,7 +17,7 @@ import { jobTypeDisplayMap, subGroupDisplayMap } from '@/app/utils/field-display
 import { useMediaQuery } from '@mantine/hooks'; //hook to see if user is on a phone for mobile frontend view -carl
 import { ActivateDeactivateAccountButton } from '@/app/components/AdminDashboard/ActivateDeactivateAccountButton';
 import { FsaeRole } from '@/models/roles';
-        
+import { ApplicationHistory } from '@/app/components/ApplicationHistory';
 
 
 
@@ -396,6 +396,15 @@ export function StudentProfile() {
               </ActionIcon>
             )}
           </Box>
+
+          {isLocalProfile && (
+            <Box ml={20} mt={30}>
+              <Title order={5}>My Applications</Title>
+              <Box pl={15} mt={10} className={styles.box}>
+                <ApplicationHistory userId={id as string} />
+              </Box>
+            </Box>
+          )}
         </Grid.Col>
       </Grid>
 

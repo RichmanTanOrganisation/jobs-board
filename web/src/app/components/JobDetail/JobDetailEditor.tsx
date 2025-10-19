@@ -1,13 +1,19 @@
-import { TextInput, Textarea, Button, Select, Group, Avatar } from '@mantine/core';
+import { TextInput, Textarea, Button, Select, Group, Checkbox, Stack, Modal, Avatar, Alert } from '@mantine/core';
+import { IconInfoCircle } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 import styles from './JobDetail.module.css';
 import editorStyles from './JobDetailEditor.module.css';
 import { useMediaQuery } from '@mantine/hooks';
 import { Job } from '@/models/job.model';
-import { createJob, updateJob } from '@/api/job';
+import { createJob, updateJob, deleteJob } from '@/api/job';
+import { createJobForm } from '@/api/tally';
 import { toast } from 'react-toastify';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
+import { TallyFormBuilder, FormField } from '../TallyFormBuilder';
+import { CreateFormRequest } from '@/schemas/tally/requests/create-form-request';
+import { ZodError } from 'zod';
+import { convertToTallyBlocks } from '@/utils/tallyFormUtils';
 import { useUserAvatar } from '@/hooks/useUserAvatar';
 import { useNavigate } from 'react-router-dom';
 
@@ -63,6 +69,12 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
   const [salaryType, setSalaryType] = useState<string>('');
   const [salaryValue, setSalaryValue] = useState<string>('');
 
+  // Tally form state
+  const [enableTallyForm, setEnableTallyForm] = useState(false);
+  const [showFormBuilder, setShowFormBuilder] = useState(false);
+  const [formTitle, setFormTitle] = useState('Job Application Form');
+  const [formFields, setFormFields] = useState<FormField[]>([]);
+
   const userRole = useSelector((state: RootState) => state.user.role);
   const userId = useSelector((state: RootState) => state.user.id);
   const { avatarUrl: posterAvatar } = useUserAvatar(userId);
@@ -90,6 +102,11 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
         applicationDeadline: deadline,
         applicationLink: initialData.applicationLink || '',
       });
+
+      // Set Tally form state based on existing job data
+      if (initialData.tallyFormId) {
+        setEnableTallyForm(true);
+      }
     } else if (mode === 'create') {
       // Reset form for creating new job
       setFormData({
@@ -126,7 +143,18 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
       newErrors.roleType = 'Role type must be one of: Internship, Graduate, Junior';
     }
 
-    if (!formData.applicationDeadline) newErrors.applicationDeadline = 'Application deadline is required';
+    if (!formData.applicationDeadline) {
+      newErrors.applicationDeadline = 'Application deadline is required';
+    }
+
+    // Either applicationLink OR enableTallyForm must be set (not both, not neither)
+    if (!enableTallyForm && !formData.applicationLink.trim()) {
+      newErrors.applicationLink = 'Application link is required when not using Tally form';
+    }
+
+    if (enableTallyForm && formData.applicationLink.trim()) {
+      newErrors.applicationLink = 'Clear this field when using Tally form';
+    }
 
     if (!formData.applicationLink.trim()) newErrors.applicationLink = 'Application link is required';
     
@@ -146,6 +174,51 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
         ...prev,
         [field]: '',
       }));
+    }
+  };
+
+  // Form builder handlers
+  const handleFormBuilderSave = (savedFormTitle: string, fields: FormField[]) => {
+    setFormTitle(savedFormTitle);
+    setFormFields(fields);
+    setShowFormBuilder(false);
+    toast.success(`Form configured with ${fields.length} fields!`);
+  };
+
+  const handleFormBuilderCancel = () => {
+    setShowFormBuilder(false);
+  };
+
+  // convertToTallyBlocks moved to /web/src/utils/tallyFormUtils.ts (shared utility)
+
+  /**
+   * Pre-validate form blocks using backend Zod schemas
+   * Prevents job creation if form would fail backend validation
+   *
+   * This is Tier 1 protection against limbo state (job exists but no form)
+   */
+  const validateFormBlocks = (blocks: any[]): { isValid: boolean; error?: string } => {
+    try {
+      // Use the exact same schema the backend will use
+      CreateFormRequest.parse({
+        name: formTitle,
+        status: 'PUBLISHED',
+        blocks: blocks
+      });
+
+      return { isValid: true };
+    } catch (error) {
+      if (error instanceof ZodError) {
+        // Format validation errors for user
+        const firstError = error.issues[0];
+        const errorPath = firstError.path.join('.') || '(root)';
+        const errorMessage = `Form validation failed: ${firstError.message} at ${errorPath}`;
+
+        console.error('Form pre-validation failed:', error.issues);
+        return { isValid: false, error: errorMessage };
+      }
+
+      return { isValid: false, error: 'Form validation failed' };
     }
   };
 
@@ -203,21 +276,85 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
           description: formData.description.trim(),
           roleType: formData.roleType.trim(),
           applicationDeadline: new Date(formData.applicationDeadline).toISOString(),
-          applicationLink: formData.applicationLink.trim(),
           datePosted: new Date().toISOString(),
           // Note: publisherID is automatically set by the backend from the current user
         };
 
+        // Only include applicationLink if NOT using Tally form
+        if (!enableTallyForm && formData.applicationLink.trim()) {
+          jobData.applicationLink = formData.applicationLink.trim();
+        }
+
+        // Set salary using normalized value
         jobData.salary = normalizeSalary(salaryValue, salaryType);
 
+        // Tier 1: Pre-validate form BEFORE creating job (prevents limbo state)
+        if (enableTallyForm) {
+          const blocks = formFields.length > 0
+            ? convertToTallyBlocks(formTitle, formFields)
+            : [];
+
+          const validation = validateFormBlocks(blocks);
+
+          if (!validation.isValid) {
+            // Form would fail backend validation - don't create job!
+            toast.error(validation.error || 'Form configuration is invalid');
+            setLoading(false);
+            return; // Stop here - don't create job
+          }
+
+          console.log('Form pre-validation passed ✓');
+        }
+
+        // Validation passed (if enabled) - safe to create job
         console.log('Creating job with data:', jobData);
-        await createJob(jobData);
+        const createdJob = await createJob(jobData);
         toast.success('Job created successfully!');
+
+        // Create Tally form if enabled (with Tier 2 rollback)
+        if (enableTallyForm && createdJob.id) {
+          try {
+            const blocks = formFields.length > 0
+              ? convertToTallyBlocks(formTitle, formFields)
+              : [];
+
+            await createJobForm(createdJob.id, {
+              name: formTitle,
+              status: 'PUBLISHED',
+              blocks: blocks
+            });
+            toast.success('Application form created successfully!');
+          } catch (formError: any) {
+            console.error('Failed to create application form:', formError);
+
+            // Tier 2: Rollback - delete the job we just created
+            toast.warning('Form creation failed. Rolling back job creation...');
+
+            try {
+              await deleteJob(createdJob.id);
+              toast.error('Job creation cancelled due to form validation failure. Please check your form configuration and try again.');
+              setLoading(false);
+              return; // Stop here - rollback complete
+            } catch (deleteError: any) {
+              console.error('Failed to rollback job creation:', deleteError);
+              toast.error('Critical error: Job was created but form failed. Please contact support to resolve this issue.');
+              setLoading(false);
+              return; // Stop here - critical error
+            }
+          }
+        }
+
         // Redirect to profile after a short delay
         setTimeout(() => {
           navigate('/profile/' + userRole + '/' + userId);
         }, 1000);
       }
+
+      // Call onSave callback if provided
+      if (onSave) {
+        onSave();
+      }
+
     } catch (error: any) {
       console.error('Error saving job:', error);
       if (error.response) {
@@ -343,15 +480,64 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
               error={errors.applicationDeadline}
               required
             />
-            <TextInput
-              label="Application Link"
-              placeholder="https://company.com/apply"
-              className={styles.detailItem}
-              value={formData.applicationLink}
-              onChange={(e) => handleInputChange('applicationLink', e.currentTarget.value)}
-              error={errors.applicationLink}
-              required
-            />
+
+            {/* Only show application link field when NOT using Tally form */}
+            {!enableTallyForm && (
+              <TextInput
+                label="Application Link"
+                placeholder="https://company.com/apply"
+                description="External URL where applicants can apply"
+                className={styles.detailItem}
+                value={formData.applicationLink}
+                onChange={(e) => handleInputChange('applicationLink', e.currentTarget.value)}
+                error={errors.applicationLink}
+                required
+              />
+            )}
+
+            {/* Show info message when editing job with Tally form */}
+            {mode === 'edit' && enableTallyForm && (
+              <Alert
+                icon={<IconInfoCircle size={16} />}
+                title="Application Form Active"
+                color="blue"
+                variant="light"
+                className={styles.detailItem}
+              >
+                This job uses an integrated application form. The form configuration cannot be modified after creation.
+                You can view submissions in the job details page.
+              </Alert>
+            )}
+
+            {/* Tally Form Creation Option (Create mode only) */}
+            {mode === 'create' && (
+              <Stack gap="sm" className={styles.detailItem}>
+                <Checkbox
+                  label="Use integrated application form"
+                  description="Collect applications directly on your platform (replaces external link)"
+                  checked={enableTallyForm}
+                  onChange={(e) => {
+                    setEnableTallyForm(e.currentTarget.checked);
+                    // Clear external link when enabling Tally form
+                    if (e.currentTarget.checked && formData.applicationLink) {
+                      handleInputChange('applicationLink', '');
+                    }
+                  }}
+                />
+                {enableTallyForm && (
+                  <Button
+                    variant="light"
+                    onClick={() => setShowFormBuilder(true)}
+                    fullWidth
+                  >
+                    {formFields.length > 0
+                      ? `Edit Form (${formFields.length} fields configured)`
+                      : 'Configure Form Fields'
+                    }
+                  </Button>
+                )}
+              </Stack>
+            )}
           </div>
         </div>
 
@@ -415,6 +601,22 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
           </div>
         </div>
       </form>
+
+      {/* Form Builder Modal */}
+      <Modal
+        opened={showFormBuilder}
+        onClose={handleFormBuilderCancel}
+        title="Configure Application Form"
+        size="xl"
+        centered
+      >
+        <TallyFormBuilder
+          initialFormTitle={formTitle}
+          initialFields={formFields}
+          onSave={handleFormBuilderSave}
+          onCancel={handleFormBuilderCancel}
+        />
+      </Modal>
     </main>
   );
 }

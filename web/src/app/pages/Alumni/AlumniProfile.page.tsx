@@ -22,6 +22,7 @@ import { subGroupDisplayMap } from '@/app/utils/field-display-maps';
 import { useMediaQuery } from '@mantine/hooks';
 import { ActivateDeactivateAccountButton } from '@/app/components/AdminDashboard/ActivateDeactivateAccountButton';
 import { FsaeRole } from '@/models/roles';
+import { ApplicationHistory } from '@/app/components/ApplicationHistory';
 
 export function AlumniProfile() {
   const isMobile = useMediaQuery('(max-width: 500px)');
@@ -353,6 +354,15 @@ export function AlumniProfile() {
               <JobCarousel jobs={jobData} />
             </Flex>
           </Box>
+
+          {isLocalProfile && (
+            <Box ml={20} mt={30}>
+              <Title order={5}>My Applications</Title>
+              <Box pl={15} mt={10} className={styles.box}>
+                <ApplicationHistory userId={id as string} />
+              </Box>
+            </Box>
+          )}
         </Grid.Col>
       </Grid>
 

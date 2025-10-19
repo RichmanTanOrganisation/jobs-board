@@ -42,7 +42,7 @@ export function JobCard({
   };
 
   return (
-    <UniversalJobCard 
+    <UniversalJobCard
       data={universalData}
       variant="sponsor-profile"
       showDeleteButton={true}

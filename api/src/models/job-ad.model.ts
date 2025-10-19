@@ -23,9 +23,9 @@ export class JobAd extends Entity {
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
-  applicationLink: string;
+  applicationLink?: string;
 
   @property({
     type: 'date',
@@ -64,6 +64,12 @@ export class JobAd extends Entity {
     },
   })
   roleType: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  tallyFormId?: string;
 
   @property({
     type: 'boolean',
