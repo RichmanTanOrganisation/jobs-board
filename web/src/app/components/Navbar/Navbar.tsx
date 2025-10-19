@@ -173,7 +173,7 @@ function Navbar() {
     }
   };
 
-  const [opened, { toggle, close }] = useDisclosure();
+  const [opened, { toggle, open, close }] = useDisclosure();
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [openModal, setOpenModal] = useState(false);
   const handleSetting = () => setOpenModal(true);
@@ -231,152 +231,37 @@ function Navbar() {
           )}
         </Flex>
 
+        {/* Desktop Icons/Auth Buttons */}
+        {/* Desktop Icons - Supposed to be seperate layout compared to mobile view */}
         {!isMobile && (
           <Flex gap="md" align="center">
             {role ? (
               <Group gap={20}>
-                <ActionIcon
-                  size={35}
-                  variant="subtle"
-                  color="white"
-                  onClick={handleJobClick}
-                  aria-label="See jobs"
-                >
+                <ActionIcon size={35} variant="subtle" color="white" onClick={handleJobClick}
+                 aria-label="See jobs">
                   <IconBriefcase2 size={35} />
                 </ActionIcon>
-
-                <ActionIcon
-                  size={35}
-                  variant="subtle"
-                  color="white"
-                  onClick={handleProfileClick}
-                  aria-label="See profile"
-                >
+                <ActionIcon size={35} variant="subtle" color="white" onClick={handleProfileClick}
+                 aria-label="See profile">
                   <IconUserCircle size={35} />
                 </ActionIcon>
-
-                <ActionIcon
-                  size={35}
-                  variant="subtle"
-                  color="white"
-                  onClick={handleSetting}
-                  aria-label="Go to settings"
-                >
+                <ActionIcon size={35} variant="subtle" color="white" onClick={handleSetting}
+                 aria-label="Go to settings">
                   <IconSettings size={35} />
                 </ActionIcon>
-
-                <Popover
-                  opened={notifsOpen}
-                  onChange={setNotifsOpen}
-                  withArrow
-                  shadow="lg"
-                  width={360}
-                  position="bottom-end"
-                  offset={8}
-                  withinPortal
-                  trapFocus
-                >
-                  <Popover.Target>
-                    <ActionIcon
-                      size={35}
-                      variant="subtle"
-                      color="white"
-                      onClick={handleNotificationClick}
-                      aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`}
-                      className={styles.iconBtn}
-                    >
-                      <IconBell size={35} />
-                      {unread > 0 && (
-                        <span className={styles.badge} aria-hidden>
-                          {unread > 99 ? '99+' : unread}
-                        </span>
-                      )}
-                    </ActionIcon>
-                  </Popover.Target>
-
-                  <Popover.Dropdown className={styles.dropdown}>
-                    <div className={styles.dropdownHeader}>
-                      <Text fw={600}>Notifications</Text>
-                    </div>
-
-                    <ScrollArea h={260} type="auto">
-                      {notifs.length === 0 ? (
-                        <Text c="dimmed" ta="center" py="md">
-                          No notifications
-                        </Text>
-                      ) : (
-                        <ul className={styles.list} role="listbox" aria-label="Notifications">
-                          {notifs.map((n) => {
-                            // only allow expansion when there's a non-empty message body
-                            const hasMsg = Boolean(
-                              n.msgBody && n.msgBody.toString().trim().length > 0
-                            );
-                            const isExpanded = hasMsg && !!expanded[n.id];
-
-                            return (
-                              <li key={n.id}>
-                                <UnstyledButton
-                                  className={`${styles.item} ${!n.read ? styles.unread : ''} ${
-                                    isExpanded ? styles.expanded : ''
-                                  }`}
-                                  onClick={
-                                    hasMsg
-                                      ? () => setExpanded((e) => ({ ...e, [n.id]: !e[n.id] }))
-                                      : undefined
-                                  }
-                                  title={new Date(n.createdAt).toLocaleString()}
-                                  aria-expanded={isExpanded}
-                                  disabled={!hasMsg}
-                                  style={{ cursor: hasMsg ? 'pointer' : 'default' }}
-                                >
-                                  {!n.read && <span className={styles.dot} aria-hidden />}
-                                  <div className={styles.row}>
-                                    <ThemeIcon
-                                      variant="light"
-                                      radius="xl"
-                                      size={28}
-                                      className={styles.avatar}
-                                    >
-                                      {iconFor(n.type)}
-                                    </ThemeIcon>
-                                    <div className={styles.msg}>
-                                      <span className={styles.time}>{timeAgo(n.createdAt)}</span>
-                                      <Text
-                                        size="sm"
-                                        fw={n.read ? 500 : 700}
-                                        className={styles.title}
-                                      >
-                                        {n.title}
-                                      </Text>
-                                      {isExpanded && (
-                                        <Text size="sm" className={styles.body}>
-                                          {n.msgBody}
-                                        </Text>
-                                      )}
-                                    </div>
-                                  </div>
-                                </UnstyledButton>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
-                    </ScrollArea>
-                  </Popover.Dropdown>
-                </Popover>
-
-                <ActionIcon
-                  size={35}
-                  variant="subtle"
-                  color="white"
-                  onClick={handleLogout}
-                  aria-label="Logout"
-                >
+                {role !== Role.Member && (
+                  <ActionIcon size={35} variant="subtle" color="white">
+                    <IconBell size={35} />
+                  </ActionIcon>
+                )}
+                <ActionIcon size={35} variant="subtle" color="white" onClick={handleLogout}
+                  aria-label="Logout">
                   <IconLogout size={35} />
                 </ActionIcon>
               </Group>
             ) : (
               <>
+                {/* Render Sign Up/Log In if not logged in */}
                 <Menu>
                   <Menu.Target>
                     <Button variant="filled" color="customPapayaOrange">
@@ -385,17 +270,16 @@ function Navbar() {
                   </Menu.Target>
                   <Menu.Dropdown>
                     <NavLink to="/signup/member" style={{ textDecoration: 'none' }}>
-                      <Menu.Item> Student</Menu.Item>
+                      <Menu.Item>Student</Menu.Item>
                     </NavLink>
                     <NavLink to="/signup/sponsor" style={{ textDecoration: 'none' }}>
-                      <Menu.Item> Sponsor</Menu.Item>
+                      <Menu.Item>Sponsor</Menu.Item>
                     </NavLink>
                     <NavLink to="/signup/alumni" style={{ textDecoration: 'none' }}>
-                      <Menu.Item> Alumni</Menu.Item>
+                      <Menu.Item>Alumni</Menu.Item>
                     </NavLink>
                   </Menu.Dropdown>
                 </Menu>
-
                 <NavLink to="/login">
                   <Button color="var(--mantine-color-customAzureBlue-1)">Log In</Button>
                 </NavLink>
@@ -421,7 +305,7 @@ function Navbar() {
         padding="md"
         hidden={!isMobile}
       >
-        <AppShell.Navbar p="md" style={{ backgroundColor: 'rgba(0, 0, 0, 0.9)' }}>
+        <AppShell.Navbar p="md" className={styles.mobileNavbar}>
           <Group justify="flex-end">
             <Burger
               opened={opened}
@@ -434,90 +318,165 @@ function Navbar() {
           <Divider my="sm" />
           {role && isRole(role) ? (
             <>
-              <Flex justify="center" align="center" gap="sm" direction="column">
-                <Divider my="sm" />
-                <Button
-                  variant="subtle"
-                  color="white"
-                  fullWidth
-                  onClick={() => {
-                    handleProfileClick();
-                    close();
-                  }}
-                  leftSection={<IconUserCircle size={20} />}
-                >
-                  Profile
-                </Button>
-                <Button
-                  variant="subtle"
-                  color="white"
-                  fullWidth
-                  onClick={() => {
-                    handleSetting();
-                    close();
-                  }}
-                  leftSection={<IconSettings size={20} />}
-                >
-                  Settings
-                </Button>
-                {role !== Role.Member && (
+              <Flex className={styles.mobileButtonsContainer}>
+                <div className={styles.mobileTopGroup}>
+                  <Divider my="sm" />
+                  {/* Primary role-specific links first (exclude Jobs/Dashboard) */}
+                  {navLinks[role]
+                    .filter(
+                      (link) =>
+                        link.label !== 'Jobs' &&
+                        link.label !== 'Job Board' &&
+                        link.label !== 'Dashboard'
+                    )
+                    .map((link) => (
+                      <Button
+                        key={link.path}
+                        size="xl"
+                        radius="md"
+                        variant="light"
+                        color="customPapayaOrange"
+                        fullWidth
+                        className={styles.mobileButton}
+                        onClick={() => {
+                          navigate(link.path);
+                          close();
+                        }}
+                      >
+                        <Text size="xl">{link.label}</Text>
+                      </Button>
+                    ))}
+                </div>
+
+                <div className={styles.mobileBottomGroup}>
+                  {/* Profile */}
                   <Button
-                    variant="subtle"
-                    color="white"
+                    size="xl"
+                    radius="md"
+                    variant="light"
+                    color="customPapayaOrange"
                     fullWidth
-                    onClick={close}
-                    leftSection={<IconBell size={20} />}
+                    className={styles.mobileButton}
+                    onClick={() => {
+                      handleProfileClick();
+                      close();
+                    }}
+                    leftSection={<IconUserCircle size={36} />}
                   >
-                    Notifications
+                    <Text size="xl">Profile</Text>
                   </Button>
-                )}
-                <Button
-                  variant="subtle"
-                  color="white"
-                  fullWidth
-                  onClick={() => {
-                    handleLogout();
-                    close();
-                  }}
-                  leftSection={<IconLogout size={20} />}
-                >
-                  Logout
-                </Button>
+
+                  {/* Job Board under Profile */}
+                  <Button
+                    size="xl"
+                    radius="md"
+                    variant="light"
+                    color="customPapayaOrange"
+                    fullWidth
+                    className={styles.mobileButton}
+                    onClick={() => {
+                      handleJobClick();
+                      close();
+                    }}
+                    leftSection={<IconBriefcase2 size={36} />}
+                  >
+                    <Text size="xl">Job Board</Text>
+                  </Button>
+
+                  {/* Settings */}
+                  <Button
+                    size="xl"
+                    radius="md"
+                    variant="light"
+                    color="customPapayaOrange"
+                    fullWidth
+                    className={styles.mobileButton}
+                    onClick={() => {
+                      handleSetting();
+                      close();
+                    }}
+                    leftSection={<IconSettings size={36} />}
+                  >
+                    <Text size="xl">Settings</Text>
+                  </Button>
+
+                  {/* Notifications (only for non-members) */}
+                  {role !== Role.Member && (
+                    <Button
+                      size="xl"
+                      radius="md"
+                      variant="light"
+                      color="customPapayaOrange"
+                      fullWidth
+                      className={styles.mobileButton}
+                      onClick={() => {
+                        close();
+                      }}
+                      leftSection={<IconBell size={36} />}
+                    >
+                      <Text size="xl">Notifications</Text>
+                    </Button>
+                  )}
+
+                  {/* Logout (red) */}
+                  <Button
+                    size="xl"
+                    radius="md"
+                    variant="light"
+                    color="red"
+                    fullWidth
+                    className={`${styles.mobileButton} ${styles.logoutButton}`}
+                    onClick={() => {
+                      handleLogout();
+                      close();
+                    }}
+                    leftSection={<IconLogout size={36} />}
+                  >
+                    <Text size="xl">Logout</Text>
+                  </Button>
+                </div>
               </Flex>
             </>
           ) : (
             <>
               <Flex justify="center" align="center" gap="sm" direction="column">
                 <Divider my="sm" />
+
                 <Menu width={200}>
                   <Menu.Target>
-                    <Button variant="subtle" color="white" fullWidth>
+                    <Button
+                      size="xl"
+                      radius="md"
+                      variant="light"
+                      color="customPapayaOrange"
+                      fullWidth
+                      className={styles.mobileButton}
+                    >
                       Sign Up
                     </Button>
                   </Menu.Target>
                   <Menu.Dropdown>
-                    <NavLink to="/signup/member" onClick={close} style={{ textDecoration: 'none' }}>
+                    <NavLink to="/signup/member" onClick={close} className={styles.navLinkReset}>
                       <Menu.Item>Student</Menu.Item>
                     </NavLink>
-                    <NavLink
-                      to="/signup/sponsor"
-                      onClick={close}
-                      style={{ textDecoration: 'none' }}
-                    >
+                    <NavLink to="/signup/sponsor" onClick={close} className={styles.navLinkReset}>
                       <Menu.Item>Sponsor</Menu.Item>
                     </NavLink>
-                    <NavLink to="/signup/alumni" onClick={close} style={{ textDecoration: 'none' }}>
+                    <NavLink to="/signup/alumni" onClick={close} className={styles.navLinkReset}>
                       <Menu.Item>Alumni</Menu.Item>
                     </NavLink>
                   </Menu.Dropdown>
                 </Menu>
 
-                <NavLink
-                  to="/login"
-                  onClick={close}
-                  style={{ textDecoration: 'none', width: '100%' }}
-                >
-                  <Button variant="subtle" color="white" fullWidth>
+                <NavLink to="/login" onClick={close} className={styles.navLinkReset}>
+                  <Button
+                    size="xl"
+                    radius="md"
+                    variant="light"
+                    color="customPapayaOrange"
+                    fullWidth
+                    className={styles.mobileButton}
+                  >
                     Log In
                   </Button>
                 </NavLink>

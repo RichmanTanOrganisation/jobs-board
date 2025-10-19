@@ -23,6 +23,18 @@ const JobListingItem: FC<JobListingItemProps> = ({ job }) => {
     isPostedByAlumni: job.isPostedByAlumni
   };
 
+  const truncateText = (text: string | undefined, max = 200) => {
+    if (!text) return '';
+    return text.length > max ? text.slice(0, max - 1).trimEnd() + '…' : text;
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    if (Number.isNaN(d.getTime())) return dateString;
+    return d.toLocaleDateString();
+  };
+
   return (
     <UniversalJobCard 
       data={jobData}

@@ -1,6 +1,8 @@
 import { TextInput, Textarea, Button, Select, Group, Avatar } from '@mantine/core';
 import { useState, useEffect } from 'react';
 import styles from './JobDetail.module.css';
+import editorStyles from './JobDetailEditor.module.css';
+import { useMediaQuery } from '@mantine/hooks';
 import { Job } from '@/models/job.model';
 import { createJob, updateJob } from '@/api/job';
 import { toast } from 'react-toastify';
@@ -45,6 +47,7 @@ function normalizeSalary(value: string, type: string): string {
 }
 
 export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEditorModalProps) {
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const [formData, setFormData] = useState<FormData>({
     title: '',
     specialisation: '',
@@ -104,17 +107,13 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
-    }
+    if (!formData.title.trim()) newErrors.title = 'Title is required';
 
-    if (!formData.specialisation.trim()) {
-      newErrors.specialisation = 'Specialisation is required';
-    }
+    if (!formData.specialisation.trim()) newErrors.specialisation = 'Specialisation is required';
 
-    if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
-    }
+    if (!formData.description.trim()) newErrors.description = 'Description is required';
+
+    if (!formData.roleType || formData.roleType.trim() === '') newErrors.roleType = 'Role type is required';
 
     if (!formData.roleType || formData.roleType.trim() === '') {
       newErrors.roleType = 'Role type is required';
@@ -122,18 +121,15 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
 
     // Validate roleType is one of the allowed values
     const validRoleTypes = ['Internship', 'Graduate', 'Junior'];
+
     if (formData.roleType && !validRoleTypes.includes(formData.roleType.trim())) {
       newErrors.roleType = 'Role type must be one of: Internship, Graduate, Junior';
     }
 
-    if (!formData.applicationDeadline) {
-      newErrors.applicationDeadline = 'Application deadline is required';
-    }
+    if (!formData.applicationDeadline) newErrors.applicationDeadline = 'Application deadline is required';
 
-    if (!formData.applicationLink.trim()) {
-      newErrors.applicationLink = 'Application link is required';
-    }
-
+    if (!formData.applicationLink.trim()) newErrors.applicationLink = 'Application link is required';
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -258,14 +254,12 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
 
   if (!canEdit) {
     return (
-      <main className={styles.jobDetailPageWrapper}>
-        <div className={styles.contentWrapper}>
+      <main className={isMobile ? `${styles.jobDetailPageWrapper} ${editorStyles.editorWrapper}` : styles.jobDetailPageWrapper}>
+        <div className={isMobile ? `${styles.contentWrapper} ${editorStyles.contentWrapper}` : styles.contentWrapper}>
           <div style={{ textAlign: 'center', padding: '2rem' }}>
             <h2>Access Denied</h2>
             <p>You do not have permission to edit job posts.</p>
-            <Button variant="outline" onClick={onCancel}>
-              Go Back
-            </Button>
+            <Button variant="outline" onClick={onCancel}>Go Back</Button>
           </div>
         </div>
       </main>
@@ -361,20 +355,19 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
           </div>
         </div>
 
-        {/* Right Column */}
-        <div className={styles.rightColumn}>
-          <div className={styles.titleRow}>
+        <div className={isMobile ? `${styles.rightColumn} ${editorStyles.rightColumn}` : styles.rightColumn}>
+          <div className={isMobile ? `${styles.titleRow} ${editorStyles.titleRow}` : styles.titleRow}>
             <TextInput
               label="Job Title"
               placeholder="Job Title"
-              className={styles.titleInput}
+              className={isMobile ? `${styles.titleInput} ${editorStyles.titleInput}` : styles.titleInput}
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.currentTarget.value)}
               error={errors.title}
               required
             />
-            <div className={styles.badgeField}>
-              <label className={styles.badgeLabel}>Role Type</label>
+            <div className={isMobile ? `${styles.badgeField} ${editorStyles.badgeField}` : styles.badgeField}>
+              <label className={isMobile ? `${styles.badgeLabel} ${editorStyles.badgeLabel}` : styles.badgeLabel}>Role Type</label>
               <Select
                 data={roleTypeOptions}
                 value={formData.roleType}
@@ -389,7 +382,7 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
           <TextInput
             label="Specialisation"
             placeholder="Enter specialisation"
-            className={styles.fullWidth}
+            className={isMobile ? `${styles.fullWidth} ${editorStyles.fullWidth}` : styles.fullWidth}
             value={formData.specialisation}
             onChange={(e) => handleInputChange('specialisation', e.currentTarget.value)}
             error={errors.specialisation}
@@ -399,19 +392,19 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
           <Textarea
             label="About"
             placeholder="Type job description here"
+            className={isMobile ? `${styles.fullWidth} ${editorStyles.fullWidth}` : styles.fullWidth}
             minRows={4}
             maxRows={11}
             autosize
             resize="vertical"
-            className={styles.fullWidth}
             value={formData.description}
             onChange={(e) => handleInputChange('description', e.currentTarget.value)}
             error={errors.description}
             required
           />
 
-          <div className={styles.buttonRow}>
-            <Group gap="sm">
+          <div className={isMobile ? `${styles.buttonRow} ${editorStyles.buttonRow}` : styles.buttonRow}>
+            <Group gap="sm" wrap="wrap">
               <Button type="submit" loading={loading}>
                 {mode === 'edit' ? 'Update Job' : 'Save & Continue'}
               </Button>

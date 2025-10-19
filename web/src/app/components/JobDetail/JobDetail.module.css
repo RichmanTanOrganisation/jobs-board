@@ -80,9 +80,13 @@
   height: 3.25rem;
 }
 
-.fullWidth { width: 100%; }
+.fullWidth {
+  width: 100%;
+}
 
-.detailItem { margin-bottom: 0.5rem; }
+.detailItem {
+  margin-bottom: 0.5rem;
+}
 
 .companyLogo {
   width: 220px;
@@ -106,7 +110,9 @@
   font-size: 1.25rem;
 }
 
-.skillSelect { width: 100%; }
+.skillSelect {
+  width: 100%;
+}
 
 .rightColumn :global(.mantine-InputWrapper-root),
 .rightColumn :global(.mantine-TextInput-root),
@@ -116,7 +122,9 @@
   width: 100%;
 }
 
-.titleInput { width: 100%; }
+.titleInput {
+  width: 100%;
+}
 
 /* Lists (if you render ULs elsewhere) */
 .skillList {
@@ -160,16 +168,16 @@
     flex-direction: column;
     gap: 1.5rem;
   }
-  
+
   .jobDetailPageWrapper {
     padding: 2rem 1rem;
   }
-  
+
   .buttonRow {
     flex-wrap: wrap;
     justify-content: center;
   }
-  
+
   .titleRow {
     grid-template-columns: 1fr;
     text-align: center;
