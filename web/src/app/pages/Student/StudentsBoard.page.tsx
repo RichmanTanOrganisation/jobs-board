@@ -11,7 +11,7 @@ import { fetchMemberList } from '@/api/member'; // added import
 export function StudentsBoard() {
   const [memberList, setMemberList] = useState<MemberListEntry[]>([]);
   const [filterRoles, setFilterRoles] = useState<string[]>([]);
-  const [filterFields, setFilterFields] = useState<string[]>([]);
+  const [filterSpecs, setFilterSpecs] = useState<string[]>([]);
   const [search, setSearch] = useState<string>('');
   const [isPortrait, setIsPortrait] = useState(window.innerHeight > window.innerWidth);
   const theme = useMantineTheme();
@@ -20,7 +20,7 @@ export function StudentsBoard() {
   const fetchNewMemberList = async () => {
     try {
       const lookingFor = filterRoles.length ? filterRoles : undefined;
-      const subGroup = filterFields.length ? filterFields : undefined;
+      const subGroup = filterSpecs.length ? filterSpecs : undefined;
       const results = await fetchMemberList(lookingFor, subGroup);
       setMemberList(results);
     } catch (err) {
@@ -36,7 +36,7 @@ export function StudentsBoard() {
   useEffect(() => {
     fetchNewMemberList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterRoles, filterFields, search]);
+  }, [filterRoles, filterSpecs, search]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -58,8 +58,8 @@ export function StudentsBoard() {
             <Filter
               filterRoles={filterRoles}
               setFilterRoles={setFilterRoles}
-              filterFields={filterFields}
-              setFilterFields={setFilterFields}
+              filterSpecs={filterSpecs}
+              setFilterSpecs={setFilterSpecs}
             />
           </Grid.Col>
           <Grid.Col span={0.5} pl={40} style={{ alignSelf: 'stretch' }}>
@@ -93,8 +93,8 @@ export function StudentsBoard() {
           <Filter
             filterRoles={filterRoles}
             setFilterRoles={setFilterRoles}
-            filterFields={filterFields}
-            setFilterFields={setFilterFields}
+            filterSpecs={filterSpecs}
+            setFilterSpecs={setFilterSpecs}
             color={theme.colors.customPapayaOrange[0]}
           />
           <StudentListing students={filteredMemberList} />
