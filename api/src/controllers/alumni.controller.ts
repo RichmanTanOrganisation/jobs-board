@@ -7,6 +7,7 @@ import {
   del,
   requestBody,
   response,
+  post,
 } from '@loopback/rest';
 import {Alumni, FsaeRole} from '../models';
 import {
@@ -20,12 +21,15 @@ import {ownerOnly} from '../decorators/owner-only.decorator';
 import {inject} from '@loopback/core';
 import {SecurityBindings, UserProfile} from '@loopback/security';
 import {Notification} from '../models/notification.model';
+import {AnnouncementRepository} from '../repositories';
 
 @authenticate('fsae-jwt')
 export class AlumniController {
   constructor(
     @repository(AlumniRepository)
     public alumniRepository: AlumniRepository,
+    @repository(AnnouncementRepository)
+    public announcementRepository: AnnouncementRepository,
     @inject(SecurityBindings.USER) protected currentUserProfile: UserProfile,
   ) {}
 
@@ -166,5 +170,53 @@ export class AlumniController {
       hasUnread: unreadCount > 0,
       unreadCount,
     };
+  }
+
+  @authenticate('fsae-jwt')
+  @authorize({allowedRoles: [FsaeRole.ALUMNI]})
+  @get('/user/alumni/announcements')
+  @response(200, {description: 'All announcements for alumni'})
+  async getAnnouncements(): Promise<{
+    announcements: Notification[];
+    hasUnread: boolean;
+    unreadCount: number;
+  }> {
+    const alumniId = this.currentUserProfile.id as string;
+    const alumni = await this.alumniRepository.findById(alumniId, {
+      fields: {lastSeenAnnouncementsAt: true},
+    } as AnyObject);
+
+    const lastSeen = alumni.lastSeenAnnouncementsAt ?? new Date(0);
+
+    const audienceWhere: AnyObject = {
+      or: [{userRole: 'alumni'}, {userRole: {exists: false}}, {userRole: []}],
+    };
+
+    const items = await this.announcementRepository.find({
+      where: audienceWhere as AnyObject,
+      order: ['createdAt DESC'],
+    });
+
+    const announcements = items.map(a => ({
+      ...a,
+      read: !(new Date(a.createdAt).getTime() > new Date(lastSeen).getTime()),
+    })) as unknown as Notification[];
+
+    const {count} = await this.announcementRepository.count({
+      and: [audienceWhere as AnyObject, {createdAt: {gt: lastSeen}}],
+    } as AnyObject);
+
+    return {announcements, hasUnread: count > 0, unreadCount: count};
+  }
+
+  @authenticate('fsae-jwt')
+  @authorize({allowedRoles: [FsaeRole.ALUMNI]})
+  @post('/user/alumni/announcements/ack')
+  @response(204, {description: 'Announcements acknowledged'})
+  async ackAnnouncements(): Promise<void> {
+    const alumniId = this.currentUserProfile.id as string;
+    await this.alumniRepository.updateById(alumniId, {
+      lastSeenAnnouncementsAt: new Date(),
+    });
   }
 }

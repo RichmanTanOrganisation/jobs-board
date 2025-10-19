@@ -19,7 +19,7 @@ import {
   response,
 } from '@loopback/rest';
 import {FsaeRole, Sponsor} from '../models';
-import {SponsorRepository} from '../repositories';
+import {AnnouncementRepository, SponsorRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 import {authorize} from '@loopback/authorization';
 import {inject} from '@loopback/core';
@@ -37,6 +37,8 @@ export class SponsorController {
     @inject(SecurityBindings.USER) protected currentUserProfile: UserProfile,
     @repository(SponsorRepository)
     public sponsorRepository: SponsorRepository,
+    @repository(AnnouncementRepository)
+    public announcementRepository: AnnouncementRepository,
   ) {}
 
   @authorize({
@@ -168,5 +170,52 @@ export class SponsorController {
       hasUnread: unreadCount > 0,
       unreadCount,
     };
+  }
+
+  @authenticate('fsae-jwt')
+  @authorize({allowedRoles: [FsaeRole.SPONSOR]})
+  @get('/user/sponsor/announcements')
+  @response(200, {description: 'All announcements for sponsors'})
+  async getAnnouncements(): Promise<{
+    announcements: Notification[];
+    hasUnread: boolean;
+    unreadCount: number;
+  }> {
+    const sponsorId = this.currentUserProfile.id as string;
+    const sponsor = await this.sponsorRepository.findById(sponsorId, {
+      fields: {lastSeenAnnouncementsAt: true},
+    });
+    const lastSeen = sponsor.lastSeenAnnouncementsAt ?? new Date(0);
+
+    const audienceWhere: AnyObject = {
+      or: [{userRole: 'member'}, {userRole: {exists: false}}, {userRole: []}],
+    };
+
+    const items = await this.announcementRepository.find({
+      where: audienceWhere as AnyObject,
+      order: ['createdAt DESC'],
+    });
+
+    const announcements = items.map(a => ({
+      ...a,
+      read: !(new Date(a.createdAt).getTime() > new Date(lastSeen).getTime()),
+    })) as unknown as Notification[];
+
+    const {count} = await this.announcementRepository.count({
+      and: [audienceWhere as AnyObject, {createdAt: {gt: lastSeen}}],
+    } as AnyObject);
+
+    return {announcements, hasUnread: count > 0, unreadCount: count};
+  }
+
+  @authenticate('fsae-jwt')
+  @authorize({allowedRoles: [FsaeRole.SPONSOR]})
+  @post('/user/sponsor/announcements/ack')
+  @response(204, {description: 'Announcements acknowledged'})
+  async ackAnnouncements(): Promise<void> {
+    const sponsorId = this.currentUserProfile.id as string;
+    await this.sponsorRepository.updateById(sponsorId, {
+      lastSeenAnnouncementsAt: new Date(),
+    });
   }
 }

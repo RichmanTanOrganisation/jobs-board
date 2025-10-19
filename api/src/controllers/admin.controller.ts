@@ -26,6 +26,7 @@ import {SecurityBindings, UserProfile, securityId} from '@loopback/security';
 import {Notification} from '../models/notification.model';
 import {randomUUID} from 'crypto';
 import {NotificationType} from '../models/notification.type';
+import {AnnouncementRepository} from '../repositories/announcements.repository';
 
 @authenticate('fsae-jwt')
 export class AdminController {
@@ -36,6 +37,8 @@ export class AdminController {
     @repository(AdminRepository) private adminRepository: AdminRepository,
     @repository(AdminLogRepository)
     private adminLogRepository: AdminLogRepository,
+    @repository(AnnouncementRepository)
+    private announcementRepository: AnnouncementRepository,
     @inject(SecurityBindings.USER) private currentUser: UserProfile,
   ) {}
 
@@ -202,7 +205,7 @@ export class AdminController {
         'application/json': {
           schema: {
             type: 'object',
-            required: ['title', 'userType', 'type'],
+            required: ['title', 'userType'],
             properties: {
               title: {type: 'string', minLength: 1},
               msgBody: {type: 'string', minLength: 1},
@@ -234,7 +237,7 @@ export class AdminController {
       type: NotificationType;
     },
   ): Promise<void> {
-    const {title, msgBody, userType, type} = body;
+    const {title, msgBody, userType} = body;
     const CAP = 50;
 
     const userRepository =
@@ -253,7 +256,7 @@ export class AdminController {
       id: randomUUID(),
       issuer: this.currentUser[securityId] as string,
       title,
-      type,
+      type: NotificationType.NOTIFICATION,
       read: false,
       createdAt: new Date(),
     };
@@ -281,6 +284,7 @@ export class AdminController {
   @post('/user/admin/announce')
   @response(200, {description: 'Announcement broadcasted successfully'})
   async announce(
+    @inject(SecurityBindings.USER) currentUser: UserProfile,
     @requestBody({
       required: true,
       content: {
@@ -290,34 +294,21 @@ export class AdminController {
             required: ['title', 'userTypes'],
             properties: {
               title: {type: 'string', minLength: 1},
-              msgBody: {type: 'string', minLength: 1},
+              msgBody: {type: 'string'},
               userTypes: {
                 type: 'array',
-                items: {
-                  type: 'string',
-                  enum: [
-                    FsaeRole.ADMIN,
-                    FsaeRole.ALUMNI,
-                    FsaeRole.MEMBER,
-                    FsaeRole.SPONSOR,
-                  ],
-                },
-                description:
-                  'One or more user groups to send the announcement to',
+                items: {type: 'string', enum: Object.values(FsaeRole)},
+                minItems: 1,
+                description: 'Target user roles',
               },
             },
           },
         },
       },
     })
-    body: {
-      title: string;
-      msgBody?: string;
-      userTypes: FsaeRole[];
-    },
-  ): Promise<{sent: number}> {
+    body: {title: string; msgBody?: string; userTypes: FsaeRole[]},
+  ): Promise<void> {
     const {title, msgBody, userTypes} = body;
-    const CAP = 50;
 
     if (!Array.isArray(userTypes) || userTypes.length === 0) {
       throw new HttpErrors.BadRequest(
@@ -325,51 +316,21 @@ export class AdminController {
       );
     }
 
-    const roleToRepo: Record<FsaeRole, any> = {
-      [FsaeRole.ALUMNI]: this.alumniRepository,
-      [FsaeRole.MEMBER]: this.memberRepository,
-      [FsaeRole.SPONSOR]: this.sponsorRepository,
-      [FsaeRole.ADMIN]: this.adminRepository,
-      [FsaeRole.UNKNOWN]: undefined,
-    };
-
     const announcementData: Partial<Notification> = {
-      id: randomUUID(),
-      issuer: this.currentUser[securityId] as string,
+      issuer: currentUser[securityId] as string,
       title,
-      type: NotificationType.ANNOUNCEMENT, // always announcement
+      type: NotificationType.ANNOUNCEMENT,
       read: false,
+      userRole: userTypes,
       createdAt: new Date(),
     };
 
-    // only include msgBody when it's provided and not just whitespace
-    if (msgBody && msgBody.toString().trim().length > 0) {
-      announcementData.msgBody = msgBody;
+    if (msgBody && msgBody.trim().length > 0) {
+      announcementData.msgBody = msgBody.trim();
     }
 
-    const announcement: Notification = new Notification(announcementData);
-
-    let totalSent = 0;
-
-    for (const role of userTypes) {
-      const repo = roleToRepo[role];
-      if (!repo) continue;
-
-      const users = await repo.find({fields: {id: true}});
-      for (const user of users) {
-        await repo.updateById(user.id, {
-          $push: {
-            notifications: {
-              $each: [announcement],
-              $sort: {createdAt: -1},
-              $slice: CAP,
-            },
-          },
-        });
-        totalSent++;
-      }
-    }
-
-    return {sent: totalSent};
+    await this.announcementRepository.create(
+      new Notification(announcementData),
+    );
   }
 }

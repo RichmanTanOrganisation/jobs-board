@@ -26,6 +26,7 @@ import {
 } from '../dtos/member-profile.dto';
 import {ownerOnly} from '../decorators/owner-only.decorator';
 import {Notification} from '../models/notification.model';
+import {AnnouncementRepository} from '../repositories/announcements.repository';
 
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -53,6 +54,8 @@ export class MemberController {
     @inject(RestBindings.Http.REQUEST) private req: Request,
     @inject(SecurityBindings.USER) protected currentUserProfile: UserProfile,
     @repository(MemberRepository) public memberRepository: MemberRepository,
+    @repository(AnnouncementRepository)
+    public announcementRepository: AnnouncementRepository,
   ) {}
 
   @authorize({
@@ -427,5 +430,52 @@ export class MemberController {
       hasUnread: unreadCount > 0,
       unreadCount,
     };
+  }
+
+  @authenticate('fsae-jwt')
+  @authorize({allowedRoles: [FsaeRole.MEMBER]})
+  @get('/user/member/announcements')
+  @response(200, {description: 'All announcements for members'})
+  async getAnnouncements(): Promise<{
+    announcements: Notification[];
+    hasUnread: boolean;
+    unreadCount: number;
+  }> {
+    const memberId = this.currentUserProfile.id as string;
+    const member = await this.memberRepository.findById(memberId, {
+      fields: {lastSeenAnnouncementsAt: true},
+    });
+    const lastSeen = member.lastSeenAnnouncementsAt ?? new Date(0);
+
+    const audienceWhere: AnyObject = {
+      or: [{userRole: 'member'}, {userRole: {exists: false}}, {userRole: []}],
+    };
+
+    const items = await this.announcementRepository.find({
+      where: audienceWhere as AnyObject,
+      order: ['createdAt DESC'],
+    });
+
+    const announcements = items.map(a => ({
+      ...a,
+      read: !(new Date(a.createdAt).getTime() > new Date(lastSeen).getTime()),
+    })) as unknown as Notification[];
+
+    const {count} = await this.announcementRepository.count({
+      and: [audienceWhere as AnyObject, {createdAt: {gt: lastSeen}}],
+    } as AnyObject);
+
+    return {announcements, hasUnread: count > 0, unreadCount: count};
+  }
+
+  @authenticate('fsae-jwt')
+  @authorize({allowedRoles: [FsaeRole.MEMBER]})
+  @post('/user/member/announcements/ack')
+  @response(204, {description: 'Announcements acknowledged'})
+  async ackAnnouncements(): Promise<void> {
+    const memberId = this.currentUserProfile.id as string;
+    await this.memberRepository.updateById(memberId, {
+      lastSeenAnnouncementsAt: new Date(),
+    });
   }
 }

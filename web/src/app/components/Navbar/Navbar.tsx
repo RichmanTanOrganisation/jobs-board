@@ -75,8 +75,11 @@ function Navbar() {
         return;
       }
       try {
-        const { unreadCount } = await notificationApi.getNotifications(role, id);
-        if (!cancelled) setUnread(unreadCount);
+        const [n, a] = await Promise.all([
+          notificationApi.getNotifications(role, id),
+          notificationApi.getAnnouncements(role),
+        ]);
+        if (!cancelled) setUnread((n?.unreadCount ?? 0) + (a?.unreadCount ?? 0));
       } catch {}
     })();
     return () => {
@@ -87,12 +90,25 @@ function Navbar() {
   const handleNotificationClick = async () => {
     if (!role || !id) return;
     try {
-      const { notifications } = await notificationApi.getNotifications(role, id);
-      setNotifs(notifications);
+      const [n, a] = await Promise.all([
+        notificationApi.getNotifications(role, id),
+        notificationApi.getAnnouncements(role),
+      ]);
+
+      const merged = [...(n.notifications ?? []), ...(a.announcements ?? [])].sort(
+        (x, y) => new Date(y.createdAt).getTime() - new Date(x.createdAt).getTime()
+      );
+
+      setNotifs(merged);
       setNotifsOpen(true);
-      await notificationApi.markAsRead(role, id);
+
+      await Promise.all([
+        notificationApi.markAsRead(role, id),
+        notificationApi.ackAnnouncements(role),
+      ]);
+
       setUnread(0);
-      setNotifs((n) => n.map((x) => ({ ...x, read: true })));
+      setNotifs((curr) => curr.map((x) => ({ ...x, read: true })));
     } catch {}
   };
 
@@ -281,7 +297,6 @@ function Navbar() {
                   <Popover.Dropdown className={styles.dropdown}>
                     <div className={styles.dropdownHeader}>
                       <Text fw={600}>Notifications</Text>
-                      <Badge variant="light">{notifs.filter((n) => !n.read).length} unread</Badge>
                     </div>
 
                     <ScrollArea h={260} type="auto">
