@@ -11,9 +11,7 @@ import { fetchMemberById } from '@/api/member';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../app/store';
-import { jwtDecode } from 'jwt-decode';
 import DeactivateAccountModal from '../../components/Modal/DeactivateAccountModal';
-import { JobType } from '@/models/job-type';
 import { SubGroup } from '@/models/subgroup.model';
 import { jobTypeDisplayMap, subGroupDisplayMap } from '@/app/utils/field-display-maps';
 import { useMediaQuery } from '@mantine/hooks'; //hook to see if user is on a phone for mobile frontend view -carl
@@ -271,23 +269,7 @@ export function StudentProfile() {
             <Box pl={15} mt={10} className={styles.box}>
               {userData ? (
                 <>
-                  <EditableField
-                    size="lg"
-                    value={userData.email}
-                    label="Email"
-                    placeholder="Click to add email"
-                    fieldName="email"
-                    userId={id as string}
-                    userRole="member"
-                    type="email"
-                    onUpdate={(_, value) => setUserData({ ...userData, email: value })}
-                    editable={isLocalProfile}
-                    required
-                    validation={(value) => {
-                      const emailPattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
-                      return !emailPattern.test(value) ? 'Please enter a valid email' : null;
-                    }}
-                  />
+                  <p>{userData.email}</p>
                   <EditableField
                     size="lg"
                     value={userData.phoneNumber}

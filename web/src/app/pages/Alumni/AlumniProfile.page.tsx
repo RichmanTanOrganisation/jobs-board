@@ -244,9 +244,9 @@ export function AlumniProfile() {
   const getAdminElements = (element: string) => {
     switch (element) {
       case 'profileBtn':
-        return (
-          null
-        );
+        return null; // Removed duplicate deactivate button - ActivateDeactivateAccountButton handles this
+      case 'addNewBtn':
+        return null;
     }
   };
 
@@ -304,18 +304,7 @@ export function AlumniProfile() {
             <Box pl={15} mt={10} className={styles.box}>
               {userData ? (
                 <>
-                  <EditableField
-                    size="md"
-                    value={userData.email}
-                    placeholder="Email"
-                    fieldName="email"
-                    userId={id as string}
-                    userRole="alumni"
-                    type="email"
-                    onUpdate={(_, value) => setUserData({ ...userData, email: value })}
-                    editable={isLocalProfile}
-                    required
-                  />
+                  <p>{userData.email}</p>
                   <EditableField
                     size="lg"
                     value={userData.phoneNumber}
