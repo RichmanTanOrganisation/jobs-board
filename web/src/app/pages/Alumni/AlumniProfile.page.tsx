@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { IconPlus } from '@tabler/icons-react';
 import { JobCarousel } from '../../components/JobCardCarousel/JobCarousel';
 import { JobCardProps } from '../../components/JobCardCarousel/JobCard';
-import { Role } from '@/app/type/role';
 import EditModal from '../../components/Modal/EditModal';
 import EditAlumniProfile from '../../components/Modal/EditAlumniProfile';
 import { EditAvatar } from '../../components/Modal/EditAvatar';
@@ -20,7 +19,6 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../../app/store';
 import DeactivateAccountModal from '../../components/Modal/DeactivateAccountModal';
 import { subGroupDisplayMap } from '@/app/utils/field-display-maps';
-import { SubGroup } from '@/models/subgroup.model';
 import { useMediaQuery } from '@mantine/hooks';
 import { ActivateDeactivateAccountButton } from '@/app/components/AdminDashboard/ActivateDeactivateAccountButton';
 import { FsaeRole } from '@/models/roles';
@@ -115,8 +113,6 @@ export function AlumniProfile() {
       setUserData(prev => prev ? { ...prev, bannerURL: '' } : prev);
     }
   };
-
-  const [userData, setUserData] = useState<Alumni | null>(null);
   
   const handleJobSaved = () => {
     const fetchUserData = async () => {
@@ -272,7 +268,7 @@ export function AlumniProfile() {
             size={isMobile ? 110 : 150}
             className={styles.avatar}
           />
-        </Box>
+        </Flex>
         <Avatar
           src={userData?.avatarURL}
           size={150}

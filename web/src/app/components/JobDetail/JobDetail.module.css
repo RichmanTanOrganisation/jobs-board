@@ -1,3 +1,4 @@
+/* Base Colors from Style Guide */
 :root {
   --papaya-orange: #F78F1F;
   --charcoal-grey: #373737;
@@ -13,7 +14,7 @@
   background-color: var(--bg-dark);
   color: var(--text-light);
   min-height: 100vh;
-  padding: 2rem 1rem;
+  padding: 4rem 2rem;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -22,7 +23,7 @@
 
 .contentWrapper {
   display: flex;
-  gap: 2rem;
+  gap: 3rem;
   width: 100%;
   max-width: 1400px;
   box-sizing: border-box;
@@ -49,81 +50,93 @@
   grid-template-columns: 1fr auto;
   column-gap: 1rem;
   align-items: end;
-  margin-bottom: 0.25rem;
+  padding: 0;
 }
-.jobTitle { line-height: 1.2; }
-.jobBadge { align-self: end; }
+
+.badgeField {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.badgeLabel {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
+  margin: 0 0 6px 0;
+  color: #c7cbd1;
+}
 
 .buttonRow {
   display: flex;
-  justify-content: flex-start; 
+  justify-content: flex-end;
   gap: 12px;
-  margin-top: 0.25rem;  
-  margin-bottom: 1.5rem;
+  margin: 0;
 }
 
 .buttonRow :global(.mantine-Button-root) {
-  font-size: 1rem;
-  height: 3rem;
+  font-size: 1.125rem;
+  padding: 1rem 2rem;
+  height: 3.25rem;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.detailItem {
+  margin-bottom: 0.5rem;
 }
 
 .companyLogo {
-  width: 240px;
-  height: 240px;
+  width: 220px;
+  height: 220px;
   object-fit: contain;
   border-radius: 12px;
   background: #151922;
   align-self: center;
+  margin-bottom: 0.5rem;
 }
 
-.detailRow { margin: 0.35rem 0; }
-.detailLabel { font-weight: 700; display: block; }
-.detailValue { font-weight: 400; display: block; margin-top: 0.15rem; }
-
-@media (min-width: 769px) {
-  .leftColumn .detailRow { font-size: 1.125rem; }
+.leftColumn strong {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #f0f0f0;
 }
 
-.applyButton {
-  font-size: 1.2rem !important;
-  padding: 1rem !important;
-  height: 3.5rem !important;
+.sectionTitle {
+  font-weight: 600;
+  margin-top: 1rem;
+  font-size: 1.25rem;
 }
 
-
-
-
-/* carl enchanced mobile layout (different to default desktop) */
-.mobileWrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  text-align: center;
-  align-items: center;
+.skillSelect {
   width: 100%;
-  max-width: 640px;
-  font-size: 1.075rem;
-  line-height: 1.55;
-  padding: 0 0.5rem;
 }
 
-.mobileLogo {
-  width: 150px;
-  height: 150px;
-  object-fit: contain;
-  border-radius: 12px;
-  background: #151922;
-  margin-bottom: 0.25rem;
-}
-
-.mobileTitle { font-size: 1.85rem; line-height: 1.25; }
-
-.mobileDetails {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+.rightColumn :global(.mantine-InputWrapper-root),
+.rightColumn :global(.mantine-TextInput-root),
+.rightColumn :global(.mantine-Textarea-root),
+.leftColumn :global(.mantine-InputWrapper-root),
+.leftColumn :global(.mantine-MultiSelect-root) {
   width: 100%;
-  max-width: 520px;
+}
+
+.titleInput {
+  width: 100%;
+}
+
+/* Lists (if you render ULs elsewhere) */
+.skillList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 0.5rem;
+  padding-left: 1rem;
+}
+
+.skillList li {
+  list-style: disc;
+  color: var(--text-light);
 }
 
 /* Removed padding-left that misaligned the Qualifications textarea */
@@ -137,9 +150,9 @@
   line-height: 1.6;
 }
 
-.mobileSectionTitle {
-  font-size: 1.3rem;
-  margin-top: 1.25rem; 
+/* Optional nicer labels color */
+:global(.mantine-InputWrapper-label) {
+  color: #d6d9df;
 }
 
 /* Responsive design for smaller screens */
@@ -155,16 +168,16 @@
     flex-direction: column;
     gap: 1.5rem;
   }
-  
+
   .jobDetailPageWrapper {
     padding: 2rem 1rem;
   }
-  
+
   .buttonRow {
     flex-wrap: wrap;
     justify-content: center;
   }
-  
+
   .titleRow {
     grid-template-columns: 1fr;
     text-align: center;

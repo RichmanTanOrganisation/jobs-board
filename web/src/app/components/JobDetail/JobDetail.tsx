@@ -10,32 +10,18 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../../app/store';
 import { useUserAvatar } from '@/hooks/useUserAvatar';
 
-interface JwtPayload { role?: string; }
-interface JobDetailProps { job: Job; }
-
-function fmtLongDate(value?: string | null) {
-  if (!value) return '—';
-  const d = new Date(value);
-  if (isNaN(d.getTime())) return '—';
-  return new Intl.DateTimeFormat('en-NZ', { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+interface JwtPayload {
+  role?: string;
 }
 
-// renders label/value only when value exists as per ben's feedback with possibly new fields to model.
-function DetailRow({ label, value }: { label: string; value?: string | null }) {
-  if (!value) return null;
-  return (
-    <Text className={styles.detailRow}>
-      <strong className={styles.detailLabel}>{label}:</strong>
-      <span className={styles.detailValue}>{value}</span>
-    </Text>
-  );
+interface JobDetailProps {
+  job: Job;
 }
 
 export function JobDetail({ job }: JobDetailProps) {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [publisherRole, setPublisherRole] = useState<string>('');
   const navigate = useNavigate();
-  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const { avatarUrl: posterAvatar } = useUserAvatar(job?.publisherID);
 
@@ -102,20 +88,33 @@ export function JobDetail({ job }: JobDetailProps) {
       if (!token) return null;
       const payload = jwtDecode<JwtPayload>(token);
       return payload.role ?? null;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }, []);
 
+  // Check if user can edit this job
   const canEdit = userRole === 'sponsor' || userRole === 'alumni';
   const canApply = userRole === 'alumni' || userRole === 'member';
   const isOwner = userId && job.publisherID === userId;
 
   const handleConfirmDelete = async (reason: string) => {
-    await adminApi.deleteJob(job.id, reason);
+    await adminApi.deleteJob(job.id, reason); // optionally pass reason to backend
+    console.log('Deleted with reason:', reason);
     navigate('/jobs');
   };
 
   const handleEditJob = () => {
-    if (!canEdit || !isOwner) return;
+    if (!canEdit) {
+      console.error('User does not have permission to edit jobs');
+      return;
+    }
+    
+    if (!isOwner) {
+      console.error('User can only edit their own job posts');
+      return;
+    }
+    
     navigate(`/job-editor/${job.id}`);
   };
 
@@ -139,23 +138,14 @@ export function JobDetail({ job }: JobDetailProps) {
               Application Deadline:{' '}
               <span style={{ fontWeight: 400 }}>{job.applicationDeadline.split("T")[0]}</span>
             </Text>
-            <Text>{job.description}</Text>
           </div>
         </div>
-      ) : (
-        <div className={styles.mobileWrapper}>
-          <img src="/WDCCLogo.png" alt="Company Logo" className={styles.mobileLogo} />
-          <Text fw={700} className={styles.mobileTitle}>{job.title}</Text>
 
-          <div className={styles.mobileDetails}>
-            <DetailRow label="Location" value={job.location ?? '—'} />
-            <DetailRow label="Salary" value={job.salary ?? undefined} />
-            <DetailRow label="Application Deadline" value={fmtLongDate(job.applicationDeadline)} />
-            <DetailRow label="Start Date" value={job.startDate ? fmtLongDate(job.startDate) : undefined} />
-            <DetailRow label="Duration" value={job.duration ?? undefined} />
-            <DetailRow label="Specialisation" value={job.specialisation ?? undefined} />
-            <DetailRow label="Role Type" value={job.roleType ?? undefined} />
-            <DetailRow label="Date Posted" value={job.datePosted ? fmtLongDate(job.datePosted) : undefined} />
+        {/* Right Column */}
+        <div className={styles.rightColumn}>
+          <div className={styles.titleRow}>
+            <Text size="2.25rem" fw={700}>{job.title}</Text>
+            <Badge size="xl" color="blue" className={styles.jobBadge}>WDCC</Badge>
           </div>
 
           <div className={styles.buttonRow}>
@@ -165,13 +155,10 @@ export function JobDetail({ job }: JobDetailProps) {
               </Button>
             ) : (
               <>
-                {canApply && (
-                  <Button fullWidth className={styles.applyButton}>
-                    Apply ↗
-                  </Button>
-                )}
+                {canApply && (<Button>Apply ↗</Button>)}
+                {canApply && (<Button variant="outline">Save</Button>)}
                 {canEdit && isOwner && (
-                  <Button variant="light" fullWidth onClick={handleEditJob}>
+                  <Button variant="light" onClick={handleEditJob}>
                     Edit Job
                   </Button>
                 )}
@@ -184,8 +171,8 @@ export function JobDetail({ job }: JobDetailProps) {
           </Text>
           <Text className={styles.descriptionText}>{job.description}</Text>
         </div>
-      )}
-
+      </div>
+      
       <DeletePostModal
         opened={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
