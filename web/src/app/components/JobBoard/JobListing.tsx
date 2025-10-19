@@ -11,9 +11,10 @@ interface JobListingProps {
   filterRoles: string[];
   filterFields: string[];
   search: string;
+  postedByFilter: 'all' | 'alumni' | 'sponsors';
 }
 
-const JobListing: FC<JobListingProps> = ({ filterRoles, filterFields, search }) => {
+const JobListing: FC<JobListingProps> = ({ filterRoles, filterFields, search, postedByFilter }) => {
   const [jobListings, setJobListings] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,26 +36,54 @@ const JobListing: FC<JobListingProps> = ({ filterRoles, filterFields, search }) 
     fetchData();
   }, [search]);
 
+  // Step 0: Exlude expired jobs
+  const activeJobs = jobListings.filter(job => {
+    if (!job.applicationDeadline) {
+      return true; // Keep if no deadline
+    }
+    const parsed = Date.parse(job.applicationDeadline);
+    if (isNaN(parsed)) {
+      return true;
+    }
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    return parsed >= startOfToday.getTime(); // include if deadline is today or in future
+  });
+
   // Carl : Filter job listings based on role type
   // Step 1: apply role/field filters
-  const byFilter = jobListings.filter(job =>
+  const byFilter = activeJobs.filter(job =>
     job.roleType &&
     (filterRoles.length === 0 ||
       filterRoles.includes(job.roleType.toLowerCase()))
     || (!job.roleType && filterRoles.length === 0)
   );
+  
+  // Step 2: field filter (not implemented)
+
+  // Step 3: apply Posted By filter
+  const byPostedByFilter = (() => {
+    if (postedByFilter === 'alumni') {
+      return byFilter.filter(job => job.isPostedByAlumni === true);
+    } else if (postedByFilter === 'sponsors') {
+      return byFilter.filter(job => job.isPostedByAlumni === undefined || job.isPostedByAlumni === false);
+    }
+    return byFilter;
+  })();
 
   // Client-side text search across title/description/specialisation
   const searchLower = (search || '').trim().toLowerCase();
   const bySearch = searchLower
-    ? byFilter.filter(job => {
+    ? byPostedByFilter.filter(job => {
         const title = (job.title || '').toLowerCase();
         const desc = (job.description || '').toLowerCase();
         const spec = (job.specialisation || '').toLowerCase();
         const match = title.includes(searchLower) || desc.includes(searchLower) || spec.includes(searchLower);
         return match;
       })
-    : byFilter;
+    : byPostedByFilter;
 
   const filteredJobListings = bySearch;
 
@@ -62,7 +91,7 @@ const JobListing: FC<JobListingProps> = ({ filterRoles, filterFields, search }) 
   const { activePage, setActivePage, paginatedData, totalPages } = usePagination(filteredJobListings, 6);
 
   // Reset page to 1 whenever filters or search changes
-  useEffect(() => setActivePage(1), [search, filterRoles, filterFields, setActivePage]);
+  useEffect(() => setActivePage(1), [search, filterRoles, filterFields, postedByFilter, setActivePage]);
 
   useEffect(() => { if (error) console.error('[JobListing] error=', error); }, [error]);
 
@@ -81,8 +110,9 @@ const JobListing: FC<JobListingProps> = ({ filterRoles, filterFields, search }) 
             title={job.title}
             description={job.description}
             location={job.specialisation}
-            company={""}
-            logo={""} 
+            company={job.publisherID}
+            logo={""}
+            isPostedByAlumni={job.isPostedByAlumni}
           />
         ))}
       </Container>

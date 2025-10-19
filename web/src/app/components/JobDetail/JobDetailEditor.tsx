@@ -1,4 +1,4 @@
-import { TextInput, Textarea, Button, Select, Group } from '@mantine/core';
+import { TextInput, Textarea, Button, Select, Group, Avatar } from '@mantine/core';
 import { useState, useEffect } from 'react';
 import styles from './JobDetail.module.css';
 import { Job } from '@/models/job.model';
@@ -6,6 +6,8 @@ import { createJob, updateJob } from '@/api/job';
 import { toast } from 'react-toastify';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
+import { useUserAvatar } from '@/hooks/useUserAvatar';
+import { useNavigate } from 'react-router-dom';
 
 
 interface JobEditorModalProps {
@@ -42,13 +44,14 @@ export function JobDetailEditor({onSave, onCancel, initialData, mode}: JobEditor
   
   const userRole = useSelector((state: RootState) => state.user.role);
   const userId = useSelector((state: RootState) => state.user.id);
+  const { avatarUrl: posterAvatar } = useUserAvatar(userId);
 
   // Check if user can edit this job
   const canEdit = userRole === 'sponsor' || userRole === 'alumni';
   const isOwner = initialData && userId && initialData.publisherID === userId;
   const isEditMode = mode === 'edit';
+  const navigate = useNavigate();
 
-  // Initialize form with existing data if editing
   useEffect(() => {
     if (initialData && mode === 'edit') {
       // Convert ISO date to YYYY-MM-DD for input[type="date"]
@@ -177,6 +180,10 @@ export function JobDetailEditor({onSave, onCancel, initialData, mode}: JobEditor
         console.log('Updating job with data:', updateData);
         await updateJob(initialData.id, updateData);
         toast.success('Job updated successfully!');
+        // Redirect to profile after a short delay
+        setTimeout(() => {
+          navigate('/profile/' + userRole + '/' + userId);
+        }, 1000);
       } else {
         // Create new job - ensure all required fields are properly set
         const jobData: any = {
@@ -198,6 +205,10 @@ export function JobDetailEditor({onSave, onCancel, initialData, mode}: JobEditor
         console.log('Creating job with data:', jobData);
         await createJob(jobData);
         toast.success('Job created successfully!');
+        // Redirect to profile after a short delay
+        setTimeout(() => {
+          navigate('/profile/' + userRole + '/' + userId);
+        }, 1000);
       }
       
     } catch (error: any) {
@@ -250,7 +261,7 @@ export function JobDetailEditor({onSave, onCancel, initialData, mode}: JobEditor
       <form className={styles.contentWrapper} onSubmit={(e) => handleSubmit(e)}>
         {/* Left Column */}
         <div className={styles.leftColumn}>
-          <img src="/WDCCLogo.png" alt="Company Logo" className={styles.companyLogo} />
+          <Avatar src={posterAvatar} alt={"Company Logo"} className={styles.companyLogo} />
           <div className={styles.leftFields}>
             <TextInput 
               label="Salary" 
