@@ -74,26 +74,11 @@ export class Member extends FsaeUser {
   hasCV?: boolean;
 
   @property({
-    type: 'string',
-    default: '',
-  })
-  avatarS3Key: string;
-
-  @property({
-    type: 'string',
-    default: '',
-  })
-  bannerS3Key: string;
-
-  @property({
     type: 'date',
     required: true,
     defaultFn: 'now',
   })
   lastSeenAnnouncementsAt: Date;
-
-  // firstName, lastName, and subGroup are already defined in parent FsaeUser class with @property decorators
-  // Default values are set in the parent class or during registration
 
   // Indexer property to allow additional data
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
