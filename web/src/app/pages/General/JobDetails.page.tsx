@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Center, Container, Title, Text, Paper, Loader, Flex, Button } from '@mantine/core';
+import { Center, Text, Loader, Flex, Button } from '@mantine/core';
 import { Job } from '@/models/job.model';
 import { fetchJobById } from '@/api/job';
 import { JobDetail } from '@/app/components/JobDetail/JobDetail';
@@ -33,7 +33,7 @@ export function JobDetailsPage() {
 
   return (
     <Center style={{ minHeight: '100vh' }}>
-      <Container size="lg" py="md">
+      <div style={{ width: '100%', maxWidth: '1400px', padding: '2rem' }}>
         <Flex justify="center" mb="md">
           <Button size="lg" onClick={() => navigate('/jobs')}>
             ← Back to Job Board
@@ -45,7 +45,7 @@ export function JobDetailsPage() {
           location: job!.location ?? '',
           startDate: job!.startDate ?? '',
         }} />
-      </Container>
+      </div>
     </Center>
   );
 }

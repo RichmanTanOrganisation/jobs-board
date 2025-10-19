@@ -1,6 +1,58 @@
+/* --- Navbar shell --- */
 .Navbar {
   position: fixed;
   z-index: 100;
   width: 100vw;
-  background-color: rgba(000, 000, 000, 0.5);
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Carl - I put some style  codesin here instead of mixing style+logic in Navbar.tsx for cleaner code */
+
+/* Mobile navbar (AppShell.Navbar) */
+.mobileNavbar {
+  background-color: rgba(0, 0, 0, 0.9);
+}
+
+/* Container for mobile buttons - a bit more space between top and bottom groups */
+.mobileButtonsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 18px; /* increased gap between groups */
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+/* Top group (role-specific links like Students / Sponsors / Alumni) */
+.mobileTopGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+/* Bottom group (profile, job board, settings, notifications, logout) */
+.mobileBottomGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+  margin-bottom: 6px;
+}
+
+/* Shared button styling for mobile buttons - blue outline matching app Azure blue */
+.mobileButton {
+  border: 1px solid var(--mantine-color-customAzureBlue-1) !important;
+}
+
+/* Logout button override to make it red*/
+.logoutButton {
+  border-color: #ff4d4f !important;
+  margin-top: 18px;
+}
+
+/* NavLink reset for full-width links */
+.navLinkReset {
+  text-decoration: none;
+  width: 100%;
+  display: block;
 }

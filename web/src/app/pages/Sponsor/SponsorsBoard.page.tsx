@@ -8,7 +8,7 @@ import { ToTopButton } from '../../components/BackToTopButton/BackToTopButton';
 export function SponsorsBoard() {
   
   const [filterRoles, setFilterRoles] = useState<string[]>([]);
-  const [filterFields, setFilterFields] = useState<string[]>([]);
+  const [filterSpecs, setFilterSpecs] = useState<string[]>([]);
 
   const [isPortrait, setIsPortrait] = useState(window.innerHeight > window.innerWidth);
   const theme = useMantineTheme();
@@ -34,8 +34,8 @@ export function SponsorsBoard() {
             <Filter
               filterRoles={filterRoles}
               setFilterRoles={setFilterRoles}
-              filterFields={filterFields}
-              setFilterFields={setFilterFields}
+              filterSpecs={filterSpecs}
+              setFilterSpecs={setFilterSpecs}
               color={theme.colors.customAzureBlue[1]}
               useRoles={false}
             />
@@ -55,7 +55,7 @@ export function SponsorsBoard() {
               title="Sponsors Board"
               placeholder="Search sponsors"
             />
-            <SponsorListing filterRoles={filterRoles} filterFields={filterFields} />
+            <SponsorListing filterRoles={filterRoles} filterSpecs={filterSpecs} />
           </Grid.Col>
           <ToTopButton />
         </>
@@ -70,11 +70,11 @@ export function SponsorsBoard() {
           <Filter
             filterRoles={filterRoles}
             setFilterRoles={setFilterRoles}
-            filterFields={filterFields}
-            setFilterFields={setFilterFields}
+            filterSpecs={filterSpecs}
+            setFilterSpecs={setFilterSpecs}
             color={theme.colors.customAzureBlue[1]}
           />
-          <SponsorListing filterRoles={filterRoles} filterFields={filterFields} />
+          <SponsorListing filterRoles={filterRoles} filterSpecs={filterSpecs} />
         </Grid.Col>
       )}
     </Grid>

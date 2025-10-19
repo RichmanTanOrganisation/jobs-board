@@ -1,40 +1,40 @@
 import {Entity, model, property} from '@loopback/repository';
 import {FsaeUser} from './fsae-user.model';
-import { JobType } from './job-type';
-import { Education } from './education.model';
-import { SubGroup } from './subgroup.model';
+import {JobType} from './job-type';
+import {Education} from './education.model';
+import {SubGroup} from './subgroup.model';
 
 @model({settings: {strict: false}})
 export class Member extends FsaeUser {
   @property({
-    type: 'string', 
-    required: true
+    type: 'string',
+    required: true,
   })
   firstName: string;
 
   @property({
-    type: 'string', 
-    required: true
+    type: 'string',
+    required: true,
   })
   lastName: string;
 
   @property({
-    type: 'string', 
+    type: 'string',
     required: true,
     jsonSchema: {
       enum: Object.values(JobType),
     },
-    default: JobType.NOT_FOR_HIRE
+    default: JobType.NOT_FOR_HIRE,
   })
   lookingFor: JobType;
 
   @property({
-    type: 'string', 
+    type: 'string',
     required: true,
     jsonSchema: {
       enum: Object.values(SubGroup),
     },
-    default: SubGroup.UNKNOWN
+    default: SubGroup.UNKNOWN,
   })
   subGroup: SubGroup;
 
@@ -50,7 +50,7 @@ export class Member extends FsaeUser {
     type: 'array',
     itemType: 'string',
     required: false, // "required: true" demands non-empty arrays, so it is turned off here
-    default: []
+    default: [],
   })
   skills: string[];
 
@@ -72,11 +72,14 @@ export class Member extends FsaeUser {
     default: false,
   })
   hasCV?: boolean;
-  
-  // firstName, lastName, and subGroup are already defined in parent FsaeUser class with @property decorators
-  // Default values are set in the parent class or during registration
 
- 
+  @property({
+    type: 'date',
+    required: true,
+    defaultFn: 'now',
+  })
+  lastSeenAnnouncementsAt: Date;
+
   // Indexer property to allow additional data
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [prop: string]: any;

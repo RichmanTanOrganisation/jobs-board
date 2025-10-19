@@ -8,9 +8,9 @@ import { Link } from 'react-router-dom';
 
 interface JobListingProps {
   filterRoles: string[];
-  filterFields: string[];
+  filterSpecs: string[];
 }
-const SponsorListing: FC<JobListingProps> = ({ filterRoles, filterFields }) => {
+const SponsorListing: FC<JobListingProps> = ({ filterRoles, filterSpecs }) => {
   const [activePage, setPage] = useState(1);
   const [sponsorsPerPage, setSponsorsPerPage] = useState<number>(16);
   const [isPortrait, setIsPortrait] = useState(window.innerHeight > window.innerWidth);

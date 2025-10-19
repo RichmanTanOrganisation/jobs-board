@@ -1,35 +1,28 @@
-import { Divider, Grid, useMantineTheme } from '@mantine/core';
+import { Divider, Grid, useMantineTheme, RangeSlider, Text, Stack } from '@mantine/core';
 import Filter from '../../components/Filter/Filter';
 import JobListing from '../../components/JobBoard/JobListing';
 import { useEffect, useState } from 'react';
 import SearchBar from '../../components/SearchBar/SearchBar';
+
 export function JobBoard() {
-  
   const [filterRoles, setFilterRoles] = useState<string[]>([]);
-  const [filterFields, setFilterFields] = useState<string[]>([]);
+  const [filterSpecs, setFilterSpecs] = useState<string[]>([]);
   const [isPortrait, setIsPortrait] = useState(window.innerHeight > window.innerWidth);
   const [searchInput, setSearchInput] = useState('');
+  const [range, setRange] = useState<[number, number]>([0, 100000]);
   const [search, setSearch] = useState('');
   const [postedByFilter, setPostedByFilter] = useState<'all' | 'alumni' | 'sponsors'>('all');
   const theme = useMantineTheme();
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsPortrait(window.innerHeight > window.innerWidth);
-    };
-
+    const handleResize = () => setIsPortrait(window.innerHeight > window.innerWidth);
     window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const handleSearch = (value?: string) => {
-  setSearch(value ?? searchInput);
+    setSearch(value ?? searchInput);
   };
-
-// carl : pagination reset is handled inside JobListing (to fix previous issue with pagination not resetting on search)
 
   return (
     <Grid justify="center" align="center">
@@ -39,12 +32,15 @@ export function JobBoard() {
             <Filter
               filterRoles={filterRoles}
               setFilterRoles={setFilterRoles}
-              filterFields={filterFields}
-              setFilterFields={setFilterFields}
+              filterSpecs={filterSpecs}
+              setFilterSpecs={setFilterSpecs}
               postedByFilter={postedByFilter}
               setPostedByFilter={setPostedByFilter}
+              range={range}
+              setRange={setRange}
             />
           </Grid.Col>
+
           <Grid.Col span={0.5} pl={40} style={{ alignSelf: 'stretch' }}>
             <Divider
               orientation="vertical"
@@ -54,6 +50,7 @@ export function JobBoard() {
               color={theme.colors.customWhite[0]}
             />
           </Grid.Col>
+
           <Grid.Col span={9}>
             <SearchBar
               search={searchInput}
@@ -64,32 +61,36 @@ export function JobBoard() {
             />
             <JobListing
               filterRoles={filterRoles}
-              filterFields={filterFields}
+              filterSpecs={filterSpecs}
+              filterSalary={range}
               search={search}
               postedByFilter={postedByFilter}
             />
           </Grid.Col>
         </>
       ) : (
-        <Grid.Col span={12}>
+        <Grid.Col span={12} mt={90}>
           <SearchBar
             search={searchInput}
             setSearch={setSearchInput}
-            title=""
-            placeholder=""
+            title="Job Board"
+            placeholder="Search jobs"
             onSearch={handleSearch}
           />
           <Filter
             filterRoles={filterRoles}
             setFilterRoles={setFilterRoles}
-            filterFields={filterFields}
-            setFilterFields={setFilterFields}
+            filterSpecs={filterSpecs}
+            setFilterSpecs={setFilterSpecs}
             postedByFilter={postedByFilter}
             setPostedByFilter={setPostedByFilter}
+            range={range}
+            setRange={setRange}
           />
           <JobListing
             filterRoles={filterRoles}
-            filterFields={filterFields}
+            filterSpecs={filterSpecs}
+            filterSalary={range}
             search={search}
             postedByFilter={postedByFilter}
           />
