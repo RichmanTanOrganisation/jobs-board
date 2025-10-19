@@ -12,7 +12,19 @@ export interface JobCardProps {
   publisherID: string;
 }
 
-export function JobCard({ data, onJobDeleted, onEditJob }: {
+const truncate = (s: string, max = 120) => {
+  const t = (s ?? '').trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max);
+  const i = cut.lastIndexOf(' ');
+  return ((i > 0 ? cut.slice(0, i) : cut).trimEnd()) + '…';
+};
+
+export function JobCard({
+  data,
+  onJobDeleted,
+  onEditJob,
+}: {
   data: JobCardProps;
   onJobDeleted?: () => void;
   onEditJob?: (jobData: JobCardProps) => void;

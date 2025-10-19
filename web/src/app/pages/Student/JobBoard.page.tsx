@@ -3,6 +3,7 @@ import Filter from '../../components/Filter/Filter';
 import JobListing from '../../components/JobBoard/JobListing';
 import { useEffect, useState } from 'react';
 import SearchBar from '../../components/SearchBar/SearchBar';
+
 export function JobBoard() {
   const [filterRoles, setFilterRoles] = useState<string[]>([]);
   const [filterSpecs, setFilterSpecs] = useState<string[]>([]);
@@ -14,22 +15,14 @@ export function JobBoard() {
   const theme = useMantineTheme();
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsPortrait(window.innerHeight > window.innerWidth);
-    };
-
+    const handleResize = () => setIsPortrait(window.innerHeight > window.innerWidth);
     window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const handleSearch = (value?: string) => {
     setSearch(value ?? searchInput);
   };
-
-  // carl : pagination reset is handled inside JobListing (to fix previous issue with pagination not resetting on search)
 
   return (
     <Grid justify="center" align="center">
@@ -47,6 +40,7 @@ export function JobBoard() {
               setRange={setRange}
             />
           </Grid.Col>
+
           <Grid.Col span={0.5} pl={40} style={{ alignSelf: 'stretch' }}>
             <Divider
               orientation="vertical"
@@ -56,6 +50,7 @@ export function JobBoard() {
               color={theme.colors.customWhite[0]}
             />
           </Grid.Col>
+
           <Grid.Col span={9}>
             <SearchBar
               search={searchInput}

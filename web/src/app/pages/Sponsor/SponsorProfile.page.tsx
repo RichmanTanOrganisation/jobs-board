@@ -24,9 +24,11 @@ import DeactivateAccountModal from '../../components/Modal/DeactivateAccountModa
 import { ActivateDeactivateAccountButton } from '@/app/components/AdminDashboard/ActivateDeactivateAccountButton';
 import { FsaeRole } from '@/models/roles';
 import { editSponsorById } from '@/api/sponsor';
-
-export function SponsorProfile() {
-  // UseState for future modal implementation
+import { useMediaQuery } from '@mantine/hooks';
+ 
+ export function SponsorProfile() {
+  const isMobile = useMediaQuery('(max-width: 500px)');
+   // UseState for future modal implementation
   const [openModal, setOpenModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const [modalContent, setModalContent] = useState<React.ReactNode>(null);
@@ -282,9 +284,7 @@ export function SponsorProfile() {
   const getAdminElements = (element: string) => {
     switch (element) {
       case 'profileBtn':
-        return (
-          null
-        );
+        return null; // Removed duplicate deactivate button - ActivateDeactivateAccountButton handles this
       case 'addNewBtn':
         return null;
     }
@@ -300,7 +300,7 @@ export function SponsorProfile() {
           onClick={handleBannerChange}
           style={{ backgroundImage: `url(${userData?.bannerURL})` }}
         />
-        <Box className={styles.name} pl={170} pt={140}>
+        <Box className={styles.name}>
           <EditableField
             value={userData?.companyName || ''}
             placeholder="Company name"
@@ -325,13 +325,13 @@ export function SponsorProfile() {
 
         <Avatar
           src={userData?.avatarURL}
-          size={150}
-          mt={-100}
-          ml={10}
+          size={isMobile ? 110 : 150}
+          mt={isMobile ? -55 : -100}
+          ml={isMobile ? 0 : 10}
           className={styles.avatar}
           onClick={handleAvatarChange}
         />
-        <Box mt={-30} ml={170} className={styles.text}>
+        <Box className={styles.text}>
           <EditableField
             value={userData?.industry || ''}
             placeholder="Click to add industry"
@@ -370,26 +370,7 @@ export function SponsorProfile() {
             <Box pl={15} mt={10} className={styles.box}>
               {userData ? (
                 <>
-                  <EditableField
-                    size="md"
-                    value={userData.email}
-                    label="Email"
-                    placeholder="Click to add email"
-                    fieldName="email"
-                    userId={id as string}
-                    userRole="sponsor"
-                    type="email"
-                    onUpdate={(_, value) => {
-                      setUserData({ ...userData, email: value });
-                    }}
-                    editable={isLocalProfile}
-                    required
-                    validation={(value) => {
-                      const emailPattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
-                      if (!emailPattern.test(value)) return 'Please enter a valid email';
-                      return null;
-                    }}
-                  />
+                  <p>{userData.email}</p>
                   <EditableField
                     size="lg"
                     value={userData.phoneNumber}
