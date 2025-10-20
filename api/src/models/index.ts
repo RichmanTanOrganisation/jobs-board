@@ -19,3 +19,4 @@ export * from './tally-webhook.model';
 export * from './application-nonce.model';
 export * from './notification.model';
 export * from './notification.type';
+export * from './invite-code.model';

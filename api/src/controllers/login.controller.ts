@@ -262,13 +262,14 @@ export class LoginController {
       email: fsaeUser.email,
       role: fsaeUser.role,
       activated: fsaeUser.activated,
-      verified: fsaeUser.verified
+      verified: fsaeUser.verified,
+      adminStatus: fsaeUser.adminStatus
     });
 
     // Check if user is activated
-    if (!fsaeUser.activated) {
-      throw new HttpErrors.Forbidden('Account is not activated. Please contact an administrator.');
-    }
+    // if (!fsaeUser.activated) {
+    //   throw new HttpErrors.Forbidden('Account is not activated. Please contact an administrator.');
+    // }
       
     // Verify Credentials
     let passwordsMatched = await this.passwordHasher.comparePassword(
@@ -313,6 +314,8 @@ export class LoginController {
       userId: fsaeUser.id as string,
       token: token,
       verified: fsaeUser.verified,
+      activated: fsaeUser.activated,
+      adminStatus: fsaeUser.adminStatus,
     };
   }
 }

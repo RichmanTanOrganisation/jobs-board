@@ -16,7 +16,7 @@ export function LoginForm() {
   const dispatch = useDispatch();
 
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');  
+  const [password, setPassword] = useState('');
 
   // Check if user is redirected from verify page, if so, auto-fill email and password that were entered from login or signup.
   useEffect(() => {
@@ -30,7 +30,7 @@ export function LoginForm() {
     } catch (error) {
       // Expected error if user is not redirected from verify page
     }
-  }, [location.state, email, password]);  
+  }, [location.state, email, password]);
 
   async function onLogin() {
     try {
@@ -41,25 +41,51 @@ export function LoginForm() {
 
       //fetch notifs and display the number of unread notifs as a badge on the notifications icon in the navbar
       // Only show success toast if profile is complete
-      toast.success('Login Successful');
 
       // Redirect based on role
       switch (role) {
+        case 'deactivated':
+          toast.error('Login Unsuccessful');
+          navigate('/account-access', {
+            replace: true,
+            state: { case: 'deactivated' },
+          });
+          break;
+        case 'rejected':
+          toast.error('Login Unsuccessful');
+          navigate('/account-access', {
+            replace: true,
+            state: { case: 'rejected'},
+          });
+          break;
+        case 'pending':
+          console.log(email, password, id);
+          toast.error('Login Unsuccessful');
+          navigate('/account-access', {
+            replace: true,
+            state: { case: 'pending', email: email, password: password, id: id  },
+          });
+          break;
         case 'unverified':
           //navigate('/verify', {state: { email: email, password: password}, replace: true}); TODO: restore verification
-        // Since verification is disabled, redirect to home page
+          // Since verification is disabled, redirect to home page
+          toast.error('Login Unsuccessful');
           navigate('/', { replace: true });
           break;
         case 'admin':
+          toast.success('Login Successful');
           navigate(`/admin-dashboard`, { replace: true });
           break;
         case 'alumni':
+          toast.success('Login Successful');
           navigate(`/profile/alumni/${id}`, { replace: true });
           break;
         case 'member':
+          toast.success('Login Successful');
           navigate(`/profile/member/${id}`, { replace: true });
           break;
         case 'sponsor':
+          toast.success('Login Successful');
           navigate(`/profile/sponsor/${id}`, { replace: true });
           break;
         default:

@@ -25,8 +25,9 @@ import { AdminSignUp } from './pages/Admin/AdminSignup.page';
 import SignupSwitcher from './pages/General/SignupSwitcher.page';
 import { AdminLogin } from './pages/Admin/AdminLogin.page';
 import { JobDetailsPage } from './pages/General/JobDetails.page';
-import { Role } from './type/role'; 
+import { Role } from './type/role';
 import { AdminAuditLog } from './pages/Admin/AdminAuditLog.page';
+import { CodeGate } from './pages/General/CodeGate';
 
 const router = createBrowserRouter([
   {
@@ -125,7 +126,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'admin',
-        element: <AdminProfile />
+        element: <AdminProfile />,
       },
       {
         path: '*',
@@ -202,14 +203,23 @@ const router = createBrowserRouter([
     ),
   },
   {
-  path: '/admin-dashboard',
-  element: (
-    <ProtectedRoute allowedRoles={[Role.Admin]}>
+    path: '/admin-dashboard',
+    element: (
+      <ProtectedRoute allowedRoles={[Role.Admin]}>
+        <AppLayout>
+          <AdminDashboard />
+        </AppLayout>
+      </ProtectedRoute>
+    ),
+  },
+
+  {
+    path: '/account-access',
+    element: (
       <AppLayout>
-        <AdminDashboard />
+        <CodeGate />
       </AppLayout>
-    </ProtectedRoute>
-  ),
+    ),
   },
 
   {
