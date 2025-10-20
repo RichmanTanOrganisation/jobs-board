@@ -89,6 +89,13 @@ function Navbar() {
 
   const handleNotificationClick = async () => {
     if (!role || !id) return;
+    
+    // Toggle the notification panel
+    if (notifsOpen) {
+      setNotifsOpen(false);
+      return;
+    }
+    
     try {
       const [n, a] = await Promise.all([
         notificationApi.getNotifications(role, id),
@@ -249,11 +256,105 @@ function Navbar() {
                  aria-label="Go to settings">
                   <IconSettings size={35} />
                 </ActionIcon>
-                {role !== Role.Member && (
-                  <ActionIcon size={35} variant="subtle" color="white">
-                    <IconBell size={35} />
-                  </ActionIcon>
-                )}
+                <Popover
+                  opened={notifsOpen}
+                  onClose={() => setNotifsOpen(false)}
+                  position="bottom-end"
+                  withArrow
+                  shadow="md"
+                >
+                  <Popover.Target>
+                    <ActionIcon
+                      size={35}
+                      variant="subtle"
+                      color="white"
+                      onClick={handleNotificationClick}
+                      aria-label="Notifications"
+                    >
+                      <Badge
+                        size="sm"
+                        color="red"
+                        variant="filled"
+                        hidden={unread === 0}
+                        style={{ position: 'absolute', top: -5, right: -5 }}
+                      >
+                        {unread}
+                      </Badge>
+                      <IconBell size={35} />
+                    </ActionIcon>
+                  </Popover.Target>
+                  <Popover.Dropdown>
+                    <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
+                      <Group justify="space-between" align="center">
+                        <Text size="sm" fw={600}>Notifications</Text>
+                        <ActionIcon
+                          size="sm"
+                          variant="subtle"
+                          color="gray"
+                          onClick={() => setNotifsOpen(false)}
+                          aria-label="Close notifications"
+                        >
+                          ×
+                        </ActionIcon>
+                      </Group>
+                    </div>
+                    <ScrollArea h={400} w={350}>
+                      {notifs.length === 0 ? (
+                        <Text p="md" c="dimmed" ta="center">
+                          No notifications
+                        </Text>
+                      ) : (
+                        notifs.map((n) => (
+                          <div key={n.id}>
+                            <UnstyledButton
+                              w="100%"
+                              p="sm"
+                              style={{
+                                borderBottom: '1px solid var(--mantine-color-gray-2)',
+                              }}
+                              onClick={() => {
+                                setExpanded((curr) => ({
+                                  ...curr,
+                                  [n.id!]: !curr[n.id!],
+                                }));
+                              }}
+                            >
+                              <Group justify="space-between" wrap="nowrap">
+                                <Group gap="sm" style={{ flex: 1, minWidth: 0 }}>
+                                  <ThemeIcon
+                                    size="sm"
+                                    variant="light"
+                                    color={n.type === 'announcement' ? 'blue' : 'orange'}
+                                  >
+                                    {iconFor(n.type)}
+                                  </ThemeIcon>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <Text size="sm" fw={n.read ? 400 : 600} truncate>
+                                      {n.title}
+                                    </Text>
+                                    <Text size="xs" c="dimmed">
+                                      {timeAgo(n.createdAt)}
+                                    </Text>
+                                  </div>
+                                </Group>
+                                {n.msgBody && (
+                                  <Text size="xs" c="dimmed">
+                                    {expanded[n.id!] ? '▼' : '▶'}
+                                  </Text>
+                                )}
+                              </Group>
+                            </UnstyledButton>
+                            {n.msgBody && expanded[n.id!] && (
+                              <Text size="sm" p="sm" style={{ backgroundColor: 'var(--mantine-color-dark-6)' }}>
+                                {n.msgBody}
+                              </Text>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </ScrollArea>
+                  </Popover.Dropdown>
+                </Popover>
                 <ActionIcon size={35} variant="subtle" color="white" onClick={handleLogout}
                   aria-label="Logout">
                   <IconLogout size={35} />
@@ -400,23 +501,36 @@ function Navbar() {
                     <Text size="xl">Settings</Text>
                   </Button>
 
-                  {/* Notifications (only for non-members) */}
-                  {role !== Role.Member && (
-                    <Button
-                      size="xl"
-                      radius="md"
-                      variant="light"
-                      color="customPapayaOrange"
-                      fullWidth
-                      className={styles.mobileButton}
-                      onClick={() => {
-                        close();
-                      }}
-                      leftSection={<IconBell size={36} />}
-                    >
-                      <Text size="xl">Notifications</Text>
-                    </Button>
-                  )}
+                  {/* Notifications */}
+                  <Button
+                    size="xl"
+                    radius="md"
+                    variant="light"
+                    color="customPapayaOrange"
+                    fullWidth
+                    className={styles.mobileButton}
+                    onClick={() => {
+                      handleNotificationClick();
+                      close();
+                    }}
+                    leftSection={
+                      <div style={{ position: 'relative' }}>
+                        <IconBell size={36} />
+                        {unread > 0 && (
+                          <Badge
+                            size="sm"
+                            color="red"
+                            variant="filled"
+                            style={{ position: 'absolute', top: -8, right: -8 }}
+                          >
+                            {unread}
+                          </Badge>
+                        )}
+                      </div>
+                    }
+                  >
+                    <Text size="xl">Notifications</Text>
+                  </Button>
 
                   {/* Logout (red) */}
                   <Button

@@ -3,6 +3,7 @@ import { Tabs } from '@mantine/core';
 import { AdminApplications } from "./AdminApplications.page";
 import { AdminAuditLog } from "./AdminAuditLog.page";
 import { AdminAccountManagement } from "./AdminAccountManagement.page";
+import { AdminNotificationManagement } from "./AdminNotificationManagement.page";
 
 export function AdminDashboard() {
     const [activeTab, setActiveTab] = useState<string | null>('requests');
@@ -19,6 +20,9 @@ export function AdminDashboard() {
                 <Tabs.Tab value="account">
                     Admin Accounts
                 </Tabs.Tab>
+                <Tabs.Tab value="notifications">
+                    Notifications
+                </Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="requests">
@@ -31,6 +35,10 @@ export function AdminDashboard() {
 
             <Tabs.Panel value="account">
                 <AdminAccountManagement />
+            </Tabs.Panel>
+
+            <Tabs.Panel value="notifications">
+                <AdminNotificationManagement />
             </Tabs.Panel>
         </Tabs>
     );
