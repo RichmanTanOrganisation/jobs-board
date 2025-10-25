@@ -22,27 +22,27 @@ export class AdminLogService {
    * - Defaults logType to "log"
    * - If logType is "request" and status is not provided, defaults to "pending"
    */
-  createAdminLog(
+  async createAdminLog(
     userId: string,
     details: AdminLogDetails,
     opts?: {logType?: LogType; status?: RequestStatus},
-  ): void {
+  ): Promise<void> {
     const logType: LogType = opts?.logType ?? 'log';
     const status: RequestStatus | undefined =
       logType === 'request' ? opts?.status ?? 'pending' : opts?.status;
 
-    this.adminLogRepository
-      .create({
+    try {
+      await this.adminLogRepository.create({
         userId,
         details,
         logType,
         status, // will be undefined for a plain "log" unless caller provides it
-      } as Partial<AdminLog> as AdminLog) // cast if your Repo expects AdminLog
-      .catch(err => {
-        console.error(
-          `[AdminLogService] Failed to create ${logType} for user ${userId}:`,
-          err,
-        );
-      });
+      } as Partial<AdminLog> as AdminLog); // cast if your Repo expects AdminLog
+    } catch (err) {
+      console.error(
+        `[AdminLogService] Failed to create ${logType} for user ${userId}:`,
+        err,
+      );
+    }
   }
 }

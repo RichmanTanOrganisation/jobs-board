@@ -23,6 +23,7 @@ export interface TallySubmission {
   job_title: string;
   submitted_at: string;
   form_title: string;
+  job_deleted: boolean;
 }
 
 export interface ApplicantSubmissionsResponse {

@@ -42,8 +42,10 @@ export function ApplicationHistory({ userId }: ApplicationHistoryProps) {
     });
   };
 
-  const handleJobClick = (jobId: string) => {
-    navigate(`/jobs/${jobId}`);
+  const handleJobClick = (jobId: string, isDeleted: boolean) => {
+    if (!isDeleted) {
+      navigate(`/jobs/${jobId}`);
+    }
   };
 
   if (loading) {
@@ -81,8 +83,8 @@ export function ApplicationHistory({ userId }: ApplicationHistoryProps) {
           key={submission.id}
           p="sm"
           withBorder
-          style={{ cursor: 'pointer' }}
-          onClick={() => handleJobClick(submission.job_id)}
+          style={{ cursor: submission.job_deleted ? 'default' : 'pointer' }}
+          onClick={() => handleJobClick(submission.job_id, submission.job_deleted)}
         >
           <Stack gap="xs">
             <Anchor
@@ -90,9 +92,13 @@ export function ApplicationHistory({ userId }: ApplicationHistoryProps) {
               fw={600}
               onClick={(e) => {
                 e.stopPropagation();
-                handleJobClick(submission.job_id);
+                handleJobClick(submission.job_id, submission.job_deleted);
               }}
-              style={{ textDecoration: 'none' }}
+              style={{
+                textDecoration: submission.job_deleted ? 'none' : 'none',
+                cursor: submission.job_deleted ? 'default' : 'pointer',
+                color: submission.job_deleted ? 'var(--mantine-color-dimmed)' : undefined,
+              }}
             >
               {submission.job_title}
             </Anchor>

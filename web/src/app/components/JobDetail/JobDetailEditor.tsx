@@ -38,18 +38,20 @@ interface FormData {
 function normalizeSalary(value: string, type: string): string {
   const toAnnual = (hourly: number) => hourly * 40 * 52;
   const roundTo5000 = (num: number) => Math.round(num/1000) * 1000;
+  
   if (type === 'hourly' && value.includes('-')) {
     const [min, max] = value.split('-').map(Number);
-
-    return `${roundTo5000(toAnnual(min))}-${roundTo5000(toAnnual(max))}`
+    return `${roundTo5000(toAnnual(min))}-${roundTo5000(toAnnual(max))}`;
   } else if (type === 'salary') {
     return value;
+  } else if (type === 'negotiable' || type === 'voluntary') {
+    return type;
+  } else if (value === '') {
+    return 'negotiable';
   }
-    else if (value === '') {
-      return 'negotiable';
-    }
-  // if either voluntary or negotiable, return the type
-  return type;
+  
+  // Default fallback
+  return type || 'negotiable';
 }
 
 export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEditorModalProps) {
@@ -130,21 +132,26 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
 
     if (!formData.description.trim()) newErrors.description = 'Description is required';
 
-    if (!formData.roleType || formData.roleType.trim() === '') newErrors.roleType = 'Role type is required';
-
-    if (!formData.roleType || formData.roleType.trim() === '') {
-      newErrors.roleType = 'Role type is required';
-    }
-
-    // Validate roleType is one of the allowed values
+    // Validate roleType is required and one of the allowed values
     const validRoleTypes = ['Internship', 'Graduate', 'Junior'];
 
-    if (formData.roleType && !validRoleTypes.includes(formData.roleType.trim())) {
+    if (!formData.roleType.trim()) {
+      newErrors.roleType = 'Role type is required';
+    } else if (!validRoleTypes.includes(formData.roleType.trim())) {
       newErrors.roleType = 'Role type must be one of: Internship, Graduate, Junior';
     }
 
     if (!formData.applicationDeadline) {
       newErrors.applicationDeadline = 'Application deadline is required';
+    }
+
+    // Validate salary type and value
+    if (!salaryType) {
+      newErrors.salaryType = 'Salary type is required';
+    }
+
+    if (salaryType && (salaryType === 'hourly' || salaryType === 'salary') && !salaryValue) {
+      newErrors.salaryValue = 'Salary value is required';
     }
 
     // Either applicationLink OR enableTallyForm must be set (not both, not neither)
@@ -155,8 +162,6 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
     if (enableTallyForm && formData.applicationLink.trim()) {
       newErrors.applicationLink = 'Clear this field when using Tally form';
     }
-
-    if (!formData.applicationLink.trim()) newErrors.applicationLink = 'Application link is required';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -280,13 +285,19 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
           // Note: publisherID is automatically set by the backend from the current user
         };
 
+        // Ensure roleType is one of the valid values
+        const validRoleTypes = ['Internship', 'Graduate', 'Junior'];
+        if (!validRoleTypes.includes(jobData.roleType)) {
+          throw new Error(`Invalid roleType: ${jobData.roleType}. Must be one of: ${validRoleTypes.join(', ')}`);
+        }
+
         // Only include applicationLink if NOT using Tally form
         if (!enableTallyForm && formData.applicationLink.trim()) {
           jobData.applicationLink = formData.applicationLink.trim();
         }
 
         // Set salary using normalized value
-        jobData.salary = normalizeSalary(salaryValue, salaryType);
+        jobData.salary = normalizeSalary(salaryValue || '', salaryType || '');
 
         // Tier 1: Pre-validate form BEFORE creating job (prevents limbo state)
         if (enableTallyForm) {
@@ -308,6 +319,16 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
 
         // Validation passed (if enabled) - safe to create job
         console.log('Creating job with data:', jobData);
+        console.log('Job data types:', {
+          title: typeof jobData.title,
+          specialisation: typeof jobData.specialisation,
+          description: typeof jobData.description,
+          roleType: typeof jobData.roleType,
+          applicationDeadline: typeof jobData.applicationDeadline,
+          datePosted: typeof jobData.datePosted,
+          salary: typeof jobData.salary,
+          applicationLink: typeof jobData.applicationLink
+        });
         const createdJob = await createJob(jobData);
         toast.success('Job created successfully!');
 
@@ -422,8 +443,16 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
               onChange={(value) => {value &&
                 setSalaryType(value);
                 setSalaryValue('');
+                // Clear error when user selects a value
+                if (errors.salaryType) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    salaryType: '',
+                  }));
+                }
               }}
               placeholder="Select salary type"
+              error={errors.salaryType}
               required
             />
 
@@ -439,8 +468,16 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
                 value={salaryValue}
                 onChange={(value) => {value &&
                   setSalaryValue(value);
+                  // Clear error when user selects a value
+                  if (errors.salaryValue) {
+                    setErrors((prev) => ({
+                      ...prev,
+                      salaryValue: '',
+                    }));
+                  }
                 }}
                 placeholder="Select Hourly Wage"
+                error={errors.salaryValue}
                 required
               />
             )}
@@ -464,8 +501,16 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
                 value={salaryValue}
                 onChange={(value) => {value &&
                   setSalaryValue(value);
+                  // Clear error when user selects a value
+                  if (errors.salaryValue) {
+                    setErrors((prev) => ({
+                      ...prev,
+                      salaryValue: '',
+                    }));
+                  }
                 }}
                 placeholder="Select Annual Salary"
+                error={errors.salaryValue}
                 required
               />
             )}

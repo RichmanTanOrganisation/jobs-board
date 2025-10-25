@@ -85,4 +85,31 @@ export const adminApi = {
     const {data} = await apiInstance.get('user/admin/list');
     return data;
   },
+
+  async notifyUser(
+    id: string,
+    userType: string,
+    title: string,
+    msgBody?: string,
+    type: string = 'notification'
+  ): Promise<void> {
+    await apiInstance.post(`user/admin/notify/${id}`, {
+      title,
+      msgBody,
+      userType,
+      type,
+    });
+  },
+
+  async announce(
+    title: string,
+    userTypes: string[],
+    msgBody?: string
+  ): Promise<void> {
+    await apiInstance.post('user/admin/announce', {
+      title,
+      msgBody,
+      userTypes,
+    });
+  },
 };

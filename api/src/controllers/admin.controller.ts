@@ -587,6 +587,20 @@ export class AdminController {
         },
       },
     });
+
+    // Log the notification action
+    await this.adminLogService.createAdminLog(
+      this.currentUser[securityId] as string,
+      {
+        message: `Notification sent to ${user.email}`,
+        notificationTitle: title,
+        notificationType: body.type,
+        targetUserEmail: user.email,
+        targetUserRole: userType.toLowerCase(),
+        targetUserId: id,
+        hasMessageBody: msgBody ? 'yes' : 'no',
+      },
+    );
   }
 
   @authenticate('fsae-jwt')
@@ -638,6 +652,18 @@ export class AdminController {
 
     await this.announcementRepository.create(
       new Notification(announcementData),
+    );
+
+    // Log the announcement action
+    await this.adminLogService.createAdminLog(
+      currentUser[securityId] as string,
+      {
+        message: `Announcement sent to ${userTypes.length} role(s): ${userTypes.join(', ')}`,
+        announcementTitle: title,
+        targetRoles: userTypes.join(', '),
+        targetRoleCount: userTypes.length.toString(),
+        hasMessageBody: msgBody ? 'yes' : 'no',
+      },
     );
   }
 }

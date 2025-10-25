@@ -30,6 +30,7 @@ export function JobDetail({ job }: JobDetailProps) {
   const [previewFormData, setPreviewFormData] = useState<FormPreviewResponse | null>(null);
   const [loadingForm, setLoadingForm] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [publisherRole, setPublisherRole] = useState<string>('');
   const navigate = useNavigate();
 
@@ -152,31 +153,41 @@ export function JobDetail({ job }: JobDetailProps) {
 
           console.log('Tally application form submitted:', submissionId);
 
-          // 1. IMMEDIATE: Optimistic UI update for instant feedback
-          setTallyFormData(prev => prev ? {
-            ...prev,
-            already_applied: true,
-            submission_date: new Date().toISOString()
-          } : null);
-
-          // 2. Close modal
+          // Close modal immediately for better UX
           setApplyModalOpen(false);
 
-          // 3. User feedback
-          toast.success('Application submitted successfully!');
+          // Set submitting state (shows loading on button)
+          setSubmitting(true);
 
-          // 4. CONFIRMATION: Verify with backend after webhook processes
-          // Wait 2 seconds to allow webhook to process and update database
-          setTimeout(async () => {
-            try {
-              if (job.id) {
-                const confirmed = await getJobApplicationForm(job.id);
-                setTallyFormData(confirmed); // Overwrite optimistic update with truth
+          // Poll backend to confirm submission was saved
+          const maxAttempts = 10; // 10 attempts × 500ms = 5 seconds max
+          let attempts = 0;
+
+          const checkSubmission = async () => {
+            while (attempts < maxAttempts) {
+              attempts++;
+              await new Promise(resolve => setTimeout(resolve, 500));
+
+              try {
+                const result = await getJobApplicationForm(job.id);
+                if (result.already_applied) {
+                  // SUCCESS: Update UI
+                  setTallyFormData(result);
+                  setSubmitting(false);
+                  toast.success('Application submitted successfully!');
+                  return;
+                }
+              } catch (error) {
+                console.error('Error checking submission status:', error);
               }
-            } catch (error) {
-              console.error('Failed to confirm submission with backend:', error);
             }
-          }, 2000);
+
+            // FAILURE: Webhook didn't process in time or failed
+            setSubmitting(false);
+            toast.error('Application submission failed. Please try again or contact support.');
+          };
+
+          checkSubmission();
 
         } catch (error) {
           console.error('Error parsing Tally submission event:', error);
@@ -277,8 +288,15 @@ export function JobDetail({ job }: JobDetailProps) {
               <>
                 {canApply && !isOwner && (
                   <>
+                    {/* Submitting State - Show loader */}
+                    {submitting && (
+                      <Button disabled loading>
+                        Submitting...
+                      </Button>
+                    )}
+
                     {/* Apply Button - Opens modal for Tally form or redirects to external link */}
-                    {!loadingForm && !tallyFormData?.already_applied && (
+                    {!loadingForm && !tallyFormData?.already_applied && !submitting && (
                       <Button
                         onClick={handleApplyClick}
                         disabled={loadingForm}
@@ -287,8 +305,8 @@ export function JobDetail({ job }: JobDetailProps) {
                       </Button>
                     )}
 
-                    {/* Already Applied - Disabled button */}
-                    {!loadingForm && tallyFormData?.already_applied && (
+                    {/* Already Applied - Success state */}
+                    {!loadingForm && tallyFormData?.already_applied && !submitting && (
                       <Button
                         disabled
                         c="green"
@@ -296,9 +314,6 @@ export function JobDetail({ job }: JobDetailProps) {
                         ✓ Already Applied
                       </Button>
                     )}
-
-                    {/* Save button */}
-                    <Button variant="outline">Save</Button>
                   </>
                 )}
                 {canEdit && isOwner && (
