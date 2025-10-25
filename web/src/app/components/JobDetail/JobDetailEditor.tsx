@@ -16,6 +16,7 @@ import { ZodError } from 'zod';
 import { convertToTallyBlocks } from '@/utils/tallyFormUtils';
 import { useUserAvatar } from '@/hooks/useUserAvatar';
 import { useNavigate } from 'react-router-dom';
+import { Specs } from '../../constants/specs';
 
 interface JobEditorModalProps {
   initialData?: Job | null;
@@ -565,14 +566,13 @@ export function JobDetailEditor({ onSave, onCancel, initialData, mode }: JobEdit
             </div>
           </div>
 
-          <TextInput
+          {/* dropdown to match the real designated fsae filters (carl+ben task) */}
+          <Select
             label="Specialisation"
-            placeholder="Enter specialisation"
-            className={isMobile ? `${styles.fullWidth} ${editorStyles.fullWidth}` : styles.fullWidth}
+            placeholder="Select a specialisation"
+            data={Specs}
             value={formData.specialisation}
-            onChange={(e) => handleInputChange('specialisation', e.currentTarget.value)}
-            error={errors.specialisation}
-            required
+            onChange={(value) => handleInputChange('specialisation', value ?? '')}
           />
 
           <Textarea

@@ -86,18 +86,23 @@ const JobListing: FC<JobListingProps> = ({
     return roleMatch && salaryMatch;
   });
 
-  // Step 2: field filter (not implemented)
+  // Step 2: specialisation filter , If no specs selected, include all. else, include jobs whose specialisationmatches any selected fsae spec. (carl+ben)
+  const bySpec = byFilter.filter((job) => {
+    if (!filterSpecs || filterSpecs.length === 0) return true;
+    const jobSpec = (job.specialisation || '').toString().toUpperCase();
+    return filterSpecs.includes(jobSpec);
+  });
 
   // Step 3: apply Posted By filter
   const byPostedByFilter = (() => {
     if (postedByFilter === 'alumni') {
-      return byFilter.filter((job) => job.isPostedByAlumni === true);
+      return bySpec.filter((job) => job.isPostedByAlumni === true);
     } else if (postedByFilter === 'sponsors') {
-      return byFilter.filter(
+      return bySpec.filter(
         (job) => job.isPostedByAlumni === undefined || job.isPostedByAlumni === false
       );
     }
-    return byFilter;
+    return bySpec;
   })();
 
   // Client-side text search across title/description/specialisation
