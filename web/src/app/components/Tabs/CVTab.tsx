@@ -94,7 +94,7 @@ export const CVTab = () => {
     const formData = new FormData();
     formData.append('cv', file);
 
-    const response = await fetch('http://localhost:3000/user/member/upload-cv', {
+    const response = await fetch(`http://localhost:3000/user/member/${memberID}/upload-cv`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
