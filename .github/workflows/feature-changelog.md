@@ -3,9 +3,9 @@ on:
   workflow_dispatch:
     inputs:
       feature_branch:
-        description: "The name of your feature branch"
+        description: "Exact name of your feature branch"
         required: true
-        default: "feature-branch"
+        default: "main"
 permissions:
   contents: read
   issues: read
@@ -20,15 +20,14 @@ tools:
 
 ## Goal
 
-Summarize the differences between the `main` branch and the feature branch provided in the workflow input.
+Compare the base branch with the branch provided in the input: ${{ github.event.inputs.feature_branch }}.
 
 ## Instructions
 
-1. **Identify Target:** The feature branch name is provided in the workflow inputs as `feature_branch`.
-2. **Fetch Context:** Use the `sh` tool to run the following commands:
+1. **Identify Branch:** The branch to analyze is: ${{ github.event.inputs.feature_branch }}.
+2. **Setup Git:** Use `sh: {}` to run:
    - `git fetch origin main`
-   - `git fetch origin {{ inputs.feature_branch }}`
-   - `git log origin/main..origin/{{ inputs.feature_branch }} --oneline`
-3. **Analyze Changes:** Use `git diff origin/main..origin/{{ inputs.feature_branch }}` for code context.
-4. **Summarize:** Write a clear, bulleted summary categorized by ✨ New Capabilities, 🔧 Under-the-hood Changes, and ⚠️ Potential Risks.
-5. **Post Result:** Use `add-comment` to post this summary.
+   - `git fetch origin ${{ github.event.inputs.feature_branch }}`
+3. **Generate Log:** Use `sh: {}` to run `git log origin/main..origin/${{ github.event.inputs.feature_branch }} --oneline`.
+4. **Summarize:** Based on those commits, write a brief changelog with ✨ Features and 🐞 Fixes.
+5. **Post:** Use `add-comment` to post the result.
