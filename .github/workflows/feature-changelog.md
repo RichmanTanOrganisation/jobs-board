@@ -8,9 +8,9 @@ on:
         default: "main"
 permissions:
   contents: read
-  issues: read
 safe-outputs:
-  add-comment:
+  # We are removing add-comment entirely to avoid the "No Context" error
+  noop:
     max: 1
 tools:
   sh: {}
@@ -20,14 +20,11 @@ tools:
 
 ## Goal
 
-Compare the base branch with the branch provided in the input: ${{ github.event.inputs.feature_branch }}.
+Compare the `main` branch with `${{ github.event.inputs.feature_branch }}` and generate a summary.
 
 ## Instructions
 
-1. **Identify Branch:** The branch to analyze is: ${{ github.event.inputs.feature_branch }}.
-2. **Setup Git:** Use `sh: {}` to run:
-   - `git fetch origin main`
-   - `git fetch origin ${{ github.event.inputs.feature_branch }}`
-3. **Generate Log:** Use `sh: {}` to run `git log origin/main..origin/${{ github.event.inputs.feature_branch }} --oneline`.
-4. **Summarize:** Based on those commits, write a brief changelog with ✨ Features and 🐞 Fixes.
-5. **Post:** Use `add-comment` to post the result.
+1. **Prepare Git:** Use `sh: {}` to run `git fetch origin main ${{ github.event.inputs.feature_branch }}`.
+2. **Generate Log:** Use `sh: {}` to run `git log origin/main..origin/${{ github.event.inputs.feature_branch }} --oneline`.
+3. **Analyze:** Look at those specific commits. Ignore merge commits or "typo" fixes.
+4. **Final Report:** Write a structured summary (✨ Features / 🐞 Fixes) directly into your final response. This will appear in the **GitHub Actions Step Summary** once the run is complete.

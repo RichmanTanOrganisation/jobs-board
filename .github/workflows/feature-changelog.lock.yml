@@ -21,7 +21,7 @@
 # For more information: https://github.github.com/gh-aw/introduction/overview/
 #
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"dd730718818c88a5f8bc6545bc87057e945a761ac49ada553e452bb6a59933fd","compiler_version":"v0.64.0","strict":true,"agent_id":"copilot"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"69decb6bef851a6e4691fb4819b4de69c377be3efe4e6be7f38a4c637cb1f289","compiler_version":"v0.64.0","strict":true,"agent_id":"copilot"}
 
 name: "Feature Changelog Generator"
 "on":
@@ -136,7 +136,10 @@ jobs:
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
           cat << 'GH_AW_PROMPT_EOF'
           <safe-output-tools>
-          Tools: add_comment, missing_tool, missing_data, noop
+          Tools: create_issue, missing_tool, missing_data, noop
+          GH_AW_PROMPT_EOF
+          cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_auto_create_issue.md"
+          cat << 'GH_AW_PROMPT_EOF'
           </safe-output-tools>
           <github-context>
           The following GitHub context information is available for this workflow:
@@ -246,7 +249,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      issues: read
     env:
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
       GH_AW_ASSETS_ALLOWED_EXTS: ""
@@ -332,14 +334,14 @@ jobs:
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
           cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_EOF'
-          {"add_comment":{"max":1},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"}}
+          {"create_issue":{"labels":["feature-changelog"],"max":1,"title_prefix":"[feature-changelog]"},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"}}
           GH_AW_SAFE_OUTPUTS_CONFIG_EOF
       - name: Write Safe Outputs Tools
         run: |
           cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/tools_meta.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_META_EOF'
           {
             "description_suffixes": {
-              "add_comment": " CONSTRAINTS: Maximum 1 comment(s) can be added."
+              "create_issue": " CONSTRAINTS: Maximum 1 issue(s) can be created. Title will be prefixed with \"[feature-changelog]\". Labels [\"feature-changelog\"] will be automatically added."
             },
             "repo_params": {},
             "dynamic_tools": []
@@ -347,7 +349,7 @@ jobs:
           GH_AW_SAFE_OUTPUTS_TOOLS_META_EOF
           cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/validation.json << 'GH_AW_SAFE_OUTPUTS_VALIDATION_EOF'
           {
-            "add_comment": {
+            "create_issue": {
               "defaultMax": 1,
               "fields": {
                 "body": {
@@ -356,12 +358,27 @@ jobs:
                   "sanitize": true,
                   "maxLength": 65000
                 },
-                "item_number": {
+                "labels": {
+                  "type": "array",
+                  "itemType": "string",
+                  "itemSanitize": true,
+                  "itemMaxLength": 128
+                },
+                "parent": {
                   "issueOrPRNumber": true
                 },
                 "repo": {
                   "type": "string",
                   "maxLength": 256
+                },
+                "temporary_id": {
+                  "type": "string"
+                },
+                "title": {
+                  "required": true,
+                  "type": "string",
+                  "sanitize": true,
+                  "maxLength": 128
                 }
               }
             },
@@ -735,9 +752,7 @@ jobs:
     runs-on: ubuntu-slim
     permissions:
       contents: read
-      discussions: write
       issues: write
-      pull-requests: write
     concurrency:
       group: "gh-aw-conclusion-feature-changelog"
       cancel-in-progress: false
@@ -982,9 +997,7 @@ jobs:
     runs-on: ubuntu-slim
     permissions:
       contents: read
-      discussions: write
       issues: write
-      pull-requests: write
     timeout-minutes: 15
     env:
       GH_AW_CALLER_WORKFLOW_ID: "${{ github.repository }}/feature-changelog"
@@ -995,10 +1008,10 @@ jobs:
     outputs:
       code_push_failure_count: ${{ steps.process_safe_outputs.outputs.code_push_failure_count }}
       code_push_failure_errors: ${{ steps.process_safe_outputs.outputs.code_push_failure_errors }}
-      comment_id: ${{ steps.process_safe_outputs.outputs.comment_id }}
-      comment_url: ${{ steps.process_safe_outputs.outputs.comment_url }}
       create_discussion_error_count: ${{ steps.process_safe_outputs.outputs.create_discussion_error_count }}
       create_discussion_errors: ${{ steps.process_safe_outputs.outputs.create_discussion_errors }}
+      created_issue_number: ${{ steps.process_safe_outputs.outputs.created_issue_number }}
+      created_issue_url: ${{ steps.process_safe_outputs.outputs.created_issue_url }}
       process_safe_outputs_processed_count: ${{ steps.process_safe_outputs.outputs.processed_count }}
       process_safe_outputs_temporary_id_map: ${{ steps.process_safe_outputs.outputs.temporary_id_map }}
     steps:
@@ -1037,7 +1050,7 @@ jobs:
           GH_AW_ALLOWED_DOMAINS: "api.business.githubcopilot.com,api.enterprise.githubcopilot.com,api.github.com,api.githubcopilot.com,api.individual.githubcopilot.com,api.snapcraft.io,archive.ubuntu.com,azure.archive.ubuntu.com,crl.geotrust.com,crl.globalsign.com,crl.identrust.com,crl.sectigo.com,crl.thawte.com,crl.usertrust.com,crl.verisign.com,crl3.digicert.com,crl4.digicert.com,crls.ssl.com,github.com,host.docker.internal,json-schema.org,json.schemastore.org,keyserver.ubuntu.com,ocsp.digicert.com,ocsp.geotrust.com,ocsp.globalsign.com,ocsp.identrust.com,ocsp.sectigo.com,ocsp.ssl.com,ocsp.thawte.com,ocsp.usertrust.com,ocsp.verisign.com,packagecloud.io,packages.cloud.google.com,packages.microsoft.com,ppa.launchpad.net,raw.githubusercontent.com,registry.npmjs.org,s.symcb.com,s.symcd.com,security.ubuntu.com,telemetry.enterprise.githubcopilot.com,ts-crl.ws.symantec.com,ts-ocsp.ws.symantec.com,www.googleapis.com"
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_API_URL: ${{ github.api_url }}
-          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"add_comment\":{\"max\":1},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"true\"}}"
+          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"create_issue\":{\"labels\":[\"feature-changelog\"],\"max\":1,\"title_prefix\":\"[feature-changelog]\"},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"true\"}}"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
