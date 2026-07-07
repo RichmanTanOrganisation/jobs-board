@@ -1,0 +1,107 @@
+name: Sync repository to S3 (knowledge base)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  sync-to-s3:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::174957579910:role/security-dashboard-github-actions-s3-sync
+          aws-region: ap-southeast-2
+
+      - name: Generate metadata sidecar files
+        run: |
+          REPO_NAME="${{ github.event.repository.name }}"
+          BRANCH_NAME="${{ github.ref_name }}"
+          COMMIT_SHA="${{ github.sha }}"
+          SYNCED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          find . -type f \
+            -not -path "./.git/*" \
+            -not -path "./.github/*" \
+            -not -name ".gitignore" \
+            -not -name ".DS_Store" \
+            -not -path "*/node_modules/*" \
+            -not -path "*/dist/*" \
+            -not -path "*/build/*" \
+            -not -path "*/bin/*" \
+            -not -path "*/obj/*" \
+            -not -path "*/.next/*" \
+            -not -path "*/.cache/*" \
+            -not -path "*/coverage/*" \
+            -not -name "*.exe" \
+            -not -name "*.dll" \
+            -not -name "*.so" \
+            -not -name "*.dylib" \
+            -not -name "*.zip" \
+            -not -name "*.tar" \
+            -not -name "*.tar.gz" \
+            -not -name "*.7z" \
+            -not -name "*.png" \
+            -not -name "*.jpg" \
+            -not -name "*.jpeg" \
+            -not -name "*.gif" \
+            -not -name "*.mp4" \
+            -not -name "*.mov" \
+            -not -name "*.metadata.json" \
+            -print0 | while IFS= read -r -d '' file; do
+              FILE_PATH="${file#./}"
+              cat > "${file}.metadata.json" <<EOF
+          {
+            "metadataAttributes": {
+              "repository": "${REPO_NAME}",
+              "filePath": "${FILE_PATH}",
+              "branch": "${BRANCH_NAME}",
+              "commitSha": "${COMMIT_SHA}",
+              "syncedAt": "${SYNCED_AT}"
+            }
+          }
+          EOF
+            done
+
+      - name: Sync repository to S3
+        run: |
+          REPO_NAME="${{ github.event.repository.name }}"
+          aws s3 sync . s3://security-dashboard-project-agent-codebase/${REPO_NAME} \
+            --delete \
+            --exclude ".git/*" \
+            --exclude ".github/*" \
+            --exclude "**/.gitignore" \
+            --exclude "**/.DS_Store" \
+            --exclude "**/node_modules/*" \
+            --exclude "**/dist/*" \
+            --exclude "**/build/*" \
+            --exclude "**/bin/*" \
+            --exclude "**/obj/*" \
+            --exclude "**/.next/*" \
+            --exclude "**/.cache/*" \
+            --exclude "**/coverage/*" \
+            --exclude "**/*.exe" \
+            --exclude "**/*.dll" \
+            --exclude "**/*.so" \
+            --exclude "**/*.dylib" \
+            --exclude "**/*.zip" \
+            --exclude "**/*.tar" \
+            --exclude "**/*.tar.gz" \
+            --exclude "**/*.7z" \
+            --exclude "**/*.png" \
+            --exclude "**/*.jpg" \
+            --exclude "**/*.jpeg" \
+            --exclude "**/*.gif" \
+            --exclude "**/*.mp4" \
+            --exclude "**/*.mov"
