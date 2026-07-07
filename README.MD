@@ -57,3 +57,5 @@ The main frontend component library used is Mantine, find all relevant documenta
 The backend is built ontop of the loopback4 framework which is built ontop of express. This library allows for easy generation of REST API's through command line, find all relevant doucmentation here: https://loopback.io/doc/en/lb4/.
 
 For the full arcitecture review the system arcitecture diagram found in the Google Drive for how the libraries are used.
+
+test
